@@ -194,12 +194,12 @@ function initGlobe(containerId, analysisResult) {
   // Subtle wireframe overlay for tech feel
   const wireGeo = new THREE.SphereGeometry(RADIUS + 0.15, 36, 18);
   const wireMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, wireframe: true, transparent: true, opacity: 0.06 });
-  scene.add(new THREE.Mesh(wireGeo, wireMat));
+  globe.add(new THREE.Mesh(wireGeo, wireMat));
 
   // Atmosphere glow
   const atmosGeo = new THREE.SphereGeometry(RADIUS + 2.5, 64, 64);
   const atmosMat = new THREE.MeshBasicMaterial({ color: 0x0891b2, transparent: true, opacity: 0.08, side: THREE.BackSide });
-  scene.add(new THREE.Mesh(atmosGeo, atmosMat));
+  globe.add(new THREE.Mesh(atmosGeo, atmosMat));
 
   // Resolve players to globe positions
   const players = analysisResult.players || [];
@@ -217,12 +217,12 @@ function initGlobe(containerId, analysisResult) {
     const pos = latLngToVec3(loc.lat, loc.lng, RADIUS + 1);
     const color = playerColors[i % playerColors.length];
     const marker = createMarker(pos, color, 1.0);
-    scene.add(marker.mesh);
-    scene.add(marker.ring);
+    globe.add(marker.mesh);
+    globe.add(marker.ring);
     markers.push(marker);
 
     const label = createLabel(loc.label || loc.name, pos, '#' + color.toString(16).padStart(6, '0'));
-    scene.add(label);
+    globe.add(label);
   });
 
   // Arcs between all player pairs (connection intensity based on analysis)
@@ -238,7 +238,7 @@ function initGlobe(containerId, analysisResult) {
 
       const arc = createArc(posA, posB, arcColor, 0.3 + Math.random() * 0.2);
       arc.userData = { from: locations[i].name, to: locations[j].name };
-      scene.add(arc);
+      globe.add(arc);
       arcs.push(arc);
     }
   }
@@ -254,7 +254,7 @@ function initGlobe(containerId, analysisResult) {
     if (!isDragging) return;
     rotY += (e.clientX - prevMouse.x) * 0.005;
     rotX += (e.clientY - prevMouse.y) * 0.005;
-    rotX = Math.max(-1.2, Math.min(1.2, rotX));
+    // No clamp — full orbit allowed
     prevMouse = { x: e.clientX, y: e.clientY };
   });
   container.addEventListener('mouseup', () => { isDragging = false; });
@@ -266,13 +266,19 @@ function initGlobe(containerId, analysisResult) {
     if (!isDragging) return;
     rotY += (e.touches[0].clientX - prevMouse.x) * 0.005;
     rotX += (e.touches[0].clientY - prevMouse.y) * 0.005;
-    rotX = Math.max(-1.2, Math.min(1.2, rotX));
+    // No clamp — full orbit allowed
     prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, { passive: true });
   container.addEventListener('touchend', () => { isDragging = false; }, { passive: true });
 
   // Animation
   let time = 0;
+  // Scroll to zoom
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    camera.position.z = Math.max(60, Math.min(200, camera.position.z + e.deltaY * 0.1));
+  }, { passive: false });
+
   function animate() {
     requestAnimationFrame(animate);
     time += 0.016;
@@ -281,13 +287,6 @@ function initGlobe(containerId, analysisResult) {
 
     globe.rotation.y = rotY;
     globe.rotation.x = rotX;
-    // Rotate everything together
-    scene.children.forEach(child => {
-      if (child !== camera && child.type !== 'AmbientLight' && child.type !== 'DirectionalLight') {
-        child.rotation.y = rotY;
-        child.rotation.x = rotX;
-      }
-    });
 
     // Pulse markers
     markers.forEach((m, i) => {
