@@ -183,14 +183,14 @@
                             class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-all border border-gray-600 hover:border-cyan-500"
                             title="Copy to clipboard"
                         >
-                            📋 Copy
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:4px"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>Copy
                         </button>
                         <button 
                             onclick="shareResults()" 
                             class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-all border border-gray-600 hover:border-magenta-500"
                             title="Share results"
                         >
-                            🔗 Share
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share
                         </button>
                     </div>
                 </div>
@@ -278,7 +278,7 @@
             // Game Type
             html += `
                 <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
-                    <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎮 Game Type</h4>
+                    <h4 class="text-lg font-semibold text-cyan-400 mb-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1"/><circle cx="18" cy="14" r="1"/></svg>Game Type</h4>
                     <p class="text-gray-300">${result.gameType}</p>
                     ${result.players ? `<p class="text-gray-400 text-sm mt-2">Players: ${result.players.join(', ')}</p>` : ''}
                 </div>
@@ -287,7 +287,7 @@
             // Analysis
             html += `
                 <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
-                    <h4 class="text-lg font-semibold text-magenta-400 mb-3">📊 Analysis</h4>
+                    <h4 class="text-lg font-semibold text-magenta-400 mb-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Analysis</h4>
                     <p class="text-gray-300">${result.analysis}</p>
                 </div>
             `;
@@ -296,7 +296,7 @@
             if (result.probabilities) {
                 html += `
                     <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
-                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎲 Probabilities</h4>
+                        <h4 class="text-lg font-semibold text-cyan-400 mb-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>Probabilities</h4>
                         <div class="space-y-2">
                 `;
                 
@@ -328,7 +328,7 @@
             if (result.recommendations && result.recommendations.length > 0) {
                 html += `
                     <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
-                        <h4 class="text-lg font-semibold text-magenta-400 mb-3">💡 Recommendations</h4>
+                        <h4 class="text-lg font-semibold text-magenta-400 mb-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>Recommendations</h4>
                         <ul class="space-y-2">
                 `;
                 
@@ -343,7 +343,7 @@
             if (result.payoffMatrix) {
                 html += `
                     <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
-                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">📈 Payoff Matrix</h4>
+                        <h4 class="text-lg font-semibold text-cyan-400 mb-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Payoff Matrix</h4>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <tbody>
@@ -371,7 +371,7 @@
             if (result.assumptions && result.assumptions.length > 0) {
                 html += `
                     <div class="bg-gray-900 rounded-lg p-5 border border-yellow-500/30">
-                        <h4 class="text-lg font-semibold text-yellow-400 mb-3">⚠️ Key Assumptions</h4>
+                        <h4 class="text-lg font-semibold text-yellow-400 mb-3"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Key Assumptions</h4>
                         <ul class="space-y-2">
                 `;
                 
@@ -497,14 +497,28 @@
         // Share results (generate shareable URL)
         window.shareResults = function() {
             const scenario = document.getElementById('scenario').value;
-            // In production, this would create a shareable link via API
-            const demoUrl = `${window.location.origin}${window.location.pathname}?share=${btoa(scenario.substring(0, 100))}`;
-            
-            navigator.clipboard.writeText(demoUrl).then(() => {
-                alert('Share link copied to clipboard!\n\n' + demoUrl);
-            }).catch(() => {
-                alert('Share link:\n\n' + demoUrl);
-            });
+            const results = document.getElementById('resultContent').innerText;
+            const ts = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+
+            const report = '=== Game Theory AI Analysis ===\n'
+                + 'Date: ' + new Date().toLocaleDateString() + '\n\n'
+                + '--- SCENARIO ---\n' + scenario + '\n\n'
+                + '--- ANALYSIS ---\n' + results;
+
+            if (navigator.share) {
+                navigator.share({ title: 'Game Theory AI Analysis', text: report }).catch(function(){});
+            } else {
+                navigator.clipboard.writeText(report).then(function() {
+                    var btn = document.querySelector('[onclick="shareResults()"]');
+                    if (btn) { var orig = btn.innerHTML; btn.innerHTML = '\u2705 Copied!'; setTimeout(function(){ btn.innerHTML = orig; }, 2000); }
+                }).catch(function() {
+                    var blob = new Blob([report], { type: 'text/plain' });
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'game-theory-analysis-' + ts + '.txt';
+                    a.click();
+                });
+            }
         };
 
         // Load shared scenario from URL
