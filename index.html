@@ -28,6 +28,16 @@
     </script>
     <style>
         
+        
+        /* Cesium viewer overrides for dark theme */
+        .cesium-viewer .cesium-widget-credits { display: none !important; }
+        .cesium-viewer { border-radius: 12px; overflow: hidden; }
+        .cesium-infoBox { background: rgba(10, 22, 40, 0.95) !important; border: 1px solid rgba(34, 211, 238, 0.2) !important; }
+        .cesium-infoBox-title { color: #22d3ee !important; font-family: Inter, sans-serif !important; }
+        .cesium-infoBox-description { color: #e2e8f0 !important; }
+        .cesium-selection-wrapper { border-color: #22d3ee !important; }
+        #globeContainer:fullscreen { background: #000 !important; }
+
         @keyframes colorWave {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -56,8 +66,9 @@
             animation: spin 1s linear infinite;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="globe-viz.js"></script>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="globe-cesium.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
     <!-- Header -->
