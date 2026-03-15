@@ -1,120 +1,70 @@
 /**
- * PDF Export for Game Theory AI
- * Generates a branded professional report using html2pdf.js
+ * Game Theory AI — PDF Export
+ * Generates a branded professional PDF report from analysis results.
+ * Uses html2pdf.js (loaded via CDN).
  */
 
-window.exportPDF = async function () {
-    var btn = document.getElementById('pdfExportBtn');
-    if (!btn) return;
+async function exportPDF() {
+  const result = window.__lastAnalysisResult;
+  if (!result) { alert('Run an analysis first to export a PDF.'); return; }
 
-    var origHTML = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<svg class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-dashoffset="10"/></svg>Generating...';
+  const btn = document.getElementById('pdfExportBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
 
-    try {
-        var scenario = (document.getElementById('scenario') || {}).value || 'N/A';
-        var resultContent = document.getElementById('resultContent');
-        if (!resultContent || !resultContent.innerHTML.trim()) {
-            alert('No analysis results to export.');
-            return;
-        }
+  const scenario = document.getElementById('scenario')?.value || '';
+  const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-        var container = document.createElement('div');
-        container.id = 'pdf-export-container';
-        container.innerHTML = buildPDFContent(scenario, resultContent);
-        document.body.appendChild(container);
+  let probBars = '';
+  if (result.probabilities) {
+    probBars = Object.entries(result.probabilities).sort((a,b) => b[1]-a[1]).map(([key, val]) => {
+      const pct = (val*100).toFixed(0);
+      const color = val > 0.3 ? '#0891b2' : val > 0.15 ? '#d97706' : '#dc2626';
+      return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span>' + key.replace(/_/g,' ') + '</span><span style="font-weight:600">' + pct + '%</span></div><div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden"><div style="background:' + color + ';height:100%;width:' + pct + '%;border-radius:4px"></div></div></div>';
+    }).join('');
+  }
 
-        var opt = {
-            margin: [12, 16, 16, 16],
-            filename: 'game-theory-analysis-' + new Date().toISOString().slice(0, 10) + '.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-        };
+  let recsHtml = (result.recommendations||[]).map(r => '<li style="margin-bottom:6px;font-size:12px;color:#374151">' + r + '</li>').join('');
+  let assumeHtml = (result.assumptions||[]).map(a => '<li style="margin-bottom:4px;font-size:11px;color:#6b7280">' + a + '</li>').join('');
 
-        await html2pdf().set(opt).from(container).save();
+  let matrixHtml = '';
+  if (result.payoffMatrix) {
+    matrixHtml = '<table style="width:100%;border-collapse:collapse;margin-top:8px">' + Object.entries(result.payoffMatrix).map(([s,p]) => '<tr><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:11px">' + s.replace(/_/g,' ') + '</td><td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280">' + JSON.stringify(p) + '</td></tr>').join('') + '</table>';
+    if (result.nashEquilibrium) matrixHtml += '<p style="font-size:11px;color:#6b7280;margin-top:8px"><strong>Nash Equilibrium:</strong> ' + result.nashEquilibrium.join('; ') + '</p>';
+  }
 
-        document.body.removeChild(container);
-    } catch (err) {
-        console.error('PDF export error:', err);
-        alert('Failed to generate PDF. Please try again.');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = origHTML;
-    }
-};
+  const html = '<div style="font-family:Helvetica Neue,Arial,sans-serif;color:#111827;padding:40px;max-width:800px;margin:0 auto;background:white">'
+    + '<div style="border-bottom:3px solid #0891b2;padding-bottom:16px;margin-bottom:24px"><h1 style="font-size:28px;font-weight:800;margin:0;color:#0891b2">Game Theory AI</h1><p style="font-size:13px;color:#6b7280;margin:4px 0 0">Strategic Analysis Report</p><p style="font-size:12px;color:#9ca3af;margin:2px 0 0">' + date + ' at ' + time + '</p></div>'
+    + '<div style="background:#f0fdfa;border-left:4px solid #0891b2;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#0891b2;margin:0 0 4px">Game Type</h3><p style="font-size:14px;font-weight:600;color:#111827;margin:0">' + (result.gameType||'N/A') + '</p>' + (result.players ? '<p style="font-size:12px;color:#6b7280;margin:4px 0 0">Players: ' + result.players.join(', ') + '</p>' : '') + '</div>'
+    + '<div style="margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin:0 0 8px">Scenario</h3><p style="font-size:12px;color:#374151;line-height:1.6;white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:8px;border:1px solid #e5e7eb">' + scenario.substring(0,1500) + '</p></div>'
+    + '<div style="margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin:0 0 8px">Analysis</h3><p style="font-size:12px;color:#374151;line-height:1.7">' + (result.analysis||'N/A') + '</p></div>'
+    + (probBars ? '<div style="margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin:0 0 12px">Outcome Probabilities</h3>' + probBars + '<p style="font-size:11px;color:#9ca3af;margin-top:8px">Confidence: ' + (result.confidence||'N/A') + '</p></div>' : '')
+    + (recsHtml ? '<div style="margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin:0 0 8px">Recommendations</h3><ul style="padding-left:16px;margin:0">' + recsHtml + '</ul></div>' : '')
+    + (matrixHtml ? '<div style="margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin:0 0 8px">Payoff Matrix</h3>' + matrixHtml + '</div>' : '')
+    + (assumeHtml ? '<div style="margin-bottom:20px"><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#d97706;margin:0 0 8px">Key Assumptions</h3><ul style="padding-left:16px;margin:0">' + assumeHtml + '</ul></div>' : '')
+    + '<div style="border-top:1px solid #e5e7eb;padding-top:16px;margin-top:32px;text-align:center"><p style="font-size:10px;color:#9ca3af;margin:0">Generated by Game Theory AI</p><p style="font-size:10px;color:#d1d5db;margin:4px 0 0">' + date + '</p></div>'
+    + '</div>';
 
-function buildPDFContent(scenario, resultContent) {
-    var now = new Date();
-    var date = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    var time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  tempDiv.style.cssText = 'position:absolute;left:-9999px;top:0';
+  document.body.appendChild(tempDiv);
 
-    var clone = resultContent.cloneNode(true);
-    transformForPrint(clone);
-
-    return '<style>'
-        + '#pdf-export-container { position:fixed; left:-9999px; top:0; width:210mm; background:#fff; color:#1a1a2e; font-family:"Segoe UI",system-ui,-apple-system,sans-serif; font-size:11px; line-height:1.6; padding:0; }'
-        + '#pdf-export-container * { color:#1a1a2e !important; background:transparent !important; border-color:#d1d5db !important; }'
-        + '.pdf-header { text-align:center; padding-bottom:16px; margin-bottom:20px; border-bottom:3px solid #0891b2 !important; }'
-        + '.pdf-header h1 { font-size:22px; font-weight:700; color:#0891b2 !important; margin:0 0 4px 0; letter-spacing:-0.5px; }'
-        + '.pdf-header .subtitle { font-size:14px; color:#6b7280 !important; margin:0; }'
-        + '.pdf-header .date { font-size:11px; color:#9ca3af !important; margin-top:6px; }'
-        + '.pdf-scenario { background:#f0f9ff !important; border:1px solid #bae6fd !important; border-radius:8px; padding:14px 16px; margin-bottom:20px; }'
-        + '.pdf-scenario h3 { font-size:13px; font-weight:600; color:#0369a1 !important; margin:0 0 8px 0; text-transform:uppercase; letter-spacing:0.5px; }'
-        + '.pdf-scenario p { font-size:11px; color:#334155 !important; margin:0; white-space:pre-wrap; }'
-        + '.pdf-results { margin-bottom:20px; }'
-        + '.pdf-results .space-y-6 > div { margin-bottom:16px; padding:12px 14px; border:1px solid #e5e7eb !important; border-radius:8px; page-break-inside:avoid; }'
-        + '.pdf-results h4 { font-size:13px; font-weight:600; color:#0891b2 !important; margin-bottom:8px; }'
-        + '.pdf-results p, .pdf-results li, .pdf-results td { font-size:11px; color:#374151 !important; }'
-        + '.pdf-results .text-cyan-400, .pdf-results .text-magenta-400 { color:#0891b2 !important; }'
-        + '.pdf-results .text-yellow-400 { color:#b45309 !important; }'
-        + '.pdf-results .bg-gray-700 { background:#e5e7eb !important; border-radius:4px; overflow:hidden; }'
-        + '.pdf-results .bg-green-500 { background:#16a34a !important; }'
-        + '.pdf-results .bg-yellow-500 { background:#ca8a04 !important; }'
-        + '.pdf-results .bg-red-500 { background:#dc2626 !important; }'
-        + '.pdf-results .h-2 { height:8px !important; }'
-        + '.pdf-results table { width:100%; border-collapse:collapse; }'
-        + '.pdf-results td { padding:6px 8px; border-bottom:1px solid #e5e7eb !important; }'
-        + '.pdf-results ul { list-style:none; padding:0; margin:0; }'
-        + '.pdf-results li { padding:3px 0; }'
-        + '.pdf-results svg { display:none !important; }'
-        + '.pdf-footer { margin-top:24px; padding-top:12px; border-top:2px solid #0891b2 !important; text-align:center; }'
-        + '.pdf-footer p { font-size:10px; color:#9ca3af !important; margin:0; }'
-        + '.pdf-footer .brand { font-size:11px; color:#0891b2 !important; font-weight:600; }'
-        + '</style>'
-        + '<div class="pdf-header">'
-        +     '<h1>Game Theory AI</h1>'
-        +     '<p class="subtitle">Strategic Analysis Report</p>'
-        +     '<p class="date">' + date + ' at ' + time + '</p>'
-        + '</div>'
-        + '<div class="pdf-scenario">'
-        +     '<h3>Scenario</h3>'
-        +     '<p>' + escapeHTML(scenario) + '</p>'
-        + '</div>'
-        + '<div class="pdf-results">'
-        +     clone.innerHTML
-        + '</div>'
-        + '<div class="pdf-footer">'
-        +     '<p class="brand">Generated by Game Theory AI</p>'
-        +     '<p>gametheoryai.com</p>'
-        + '</div>';
+  try {
+    await html2pdf().set({
+      margin: [10,10,10,10],
+      filename: 'game-theory-analysis-' + new Date().toISOString().slice(0,10) + '.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(tempDiv.firstElementChild).save();
+  } catch(err) {
+    console.error('PDF export failed:', err);
+    alert('PDF export failed: ' + err.message);
+  } finally {
+    document.body.removeChild(tempDiv);
+    if (btn) { btn.disabled = false; btn.innerHTML = '\u{1F4E5} PDF'; }
+  }
 }
 
-function transformForPrint(el) {
-    var usageBlocks = el.querySelectorAll('.text-xs');
-    usageBlocks.forEach(function(b) {
-        if (b.textContent.indexOf('API Usage') !== -1) {
-            var parent = b.closest('.rounded-lg');
-            if (parent) parent.remove();
-            else b.remove();
-        }
-    });
-    el.querySelectorAll('.hidden').forEach(function(h) { h.remove(); });
-}
-
-function escapeHTML(str) {
-    var div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
+window.exportPDF = exportPDF;
