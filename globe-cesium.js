@@ -321,6 +321,9 @@ async function initGlobe(containerId, analysisResult) {
   container.style.position = 'relative';
   container.appendChild(controlDiv);
 
+  // Add conflict zone overlays
+  addConflictZones(viewer, analysisResult);
+
   // Initial fly-to
   setTimeout(() => { viewer.flyTo(viewer.entities, { duration: 3.0 }); }, 500);
 
@@ -329,6 +332,119 @@ async function initGlobe(containerId, analysisResult) {
     const w = container.clientWidth;
     container.style.height = Math.min(600, Math.max(420, w * 0.55)) + 'px';
   });
+}
+
+
+// =============================================
+// CONFLICT ZONE POLYGONS
+// =============================================
+const CONFLICT_ZONES = [
+  {
+    id: 'strait_of_hormuz',
+    label: 'Strait of Hormuz',
+    keywords: ['strait', 'hormuz', 'oil', 'tanker', 'shipping', 'chokepoint'],
+    color: '#f87171',
+    positions: [56.0,26.6, 56.3,26.2, 56.8,26.3, 56.9,26.7, 56.5,27.0, 56.1,26.9],
+    description: 'Critical chokepoint — 20% of global oil supply passes through',
+  },
+  {
+    id: 'lebanon_israel_border',
+    label: 'Lebanon-Israel Border',
+    keywords: ['lebanon', 'hezbollah', 'northern front', 'border'],
+    color: '#fb923c',
+    positions: [35.1,33.4, 35.9,33.4, 35.9,33.05, 35.1,33.05],
+    description: 'Hezbollah front — active cross-border fire zone',
+  },
+  {
+    id: 'gulf_bases',
+    label: 'Gulf Military Bases',
+    keywords: ['gulf', 'bases', 'uae', 'bahrain', 'kuwait', 'al-dhafra', 'jaber'],
+    color: '#fbbf24',
+    positions: [49.5,23.5, 55.5,23.5, 55.5,27.5, 49.5,27.5],
+    description: 'US/allied military installations under Iranian missile threat',
+  },
+  {
+    id: 'gaza',
+    label: 'Gaza Strip',
+    keywords: ['gaza', 'hamas', 'palestinian'],
+    color: '#f87171',
+    positions: [34.22,31.59, 34.56,31.59, 34.56,31.22, 34.22,31.22],
+    description: 'Active conflict zone — ongoing military operations',
+  },
+  {
+    id: 'yemen_houthi',
+    label: 'Houthi-Controlled Yemen',
+    keywords: ['yemen', 'houthi', 'red sea', 'aden'],
+    color: '#fb923c',
+    positions: [42.5,12.5, 46.0,12.5, 46.0,16.0, 44.0,17.5, 42.5,16.0],
+    description: 'Houthi territory — anti-shipping missile launch zone',
+  },
+  {
+    id: 'iran_nuclear',
+    label: 'Iran Nuclear Sites',
+    keywords: ['nuclear', 'natanz', 'fordow', 'enrichment', 'isfahan'],
+    color: '#dc2626',
+    positions: [51.0,32.0, 53.5,32.0, 53.5,34.0, 51.0,34.0],
+    description: 'Key nuclear facilities — primary strike targets',
+  },
+];
+
+function addConflictZones(viewer, analysisResult) {
+  if (!viewer || !analysisResult) return;
+
+  // Combine all text for keyword matching
+  const allText = [
+    analysisResult.analysis || '',
+    JSON.stringify(analysisResult.recommendations || []),
+    JSON.stringify(analysisResult.probabilities || {}),
+    JSON.stringify(analysisResult.assumptions || []),
+    JSON.stringify(analysisResult.players || []),
+  ].join(' ').toLowerCase();
+
+  let zonesAdded = 0;
+
+  CONFLICT_ZONES.forEach(zone => {
+    // Check if any keywords match the analysis
+    const relevant = zone.keywords.some(kw => allText.includes(kw));
+    if (!relevant) return;
+
+    const color = Cesium.Color.fromCssColorString(zone.color);
+
+    // Build positions array [lng, lat, lng, lat, ...]
+    const positions = [];
+    for (let i = 0; i < zone.positions.length; i += 2) {
+      positions.push(zone.positions[i], zone.positions[i + 1]);
+    }
+
+    // Polygon with pulsing effect via CallbackProperty
+    const startTime = Date.now();
+    viewer.entities.add({
+      name: zone.label,
+      polygon: {
+        hierarchy: Cesium.Cartesian3.fromDegreesArray(positions),
+        material: new Cesium.ColorMaterialProperty(
+          new Cesium.CallbackProperty(() => {
+            const pulse = 0.12 + Math.sin((Date.now() - startTime) / 800) * 0.08;
+            return color.withAlpha(pulse);
+          }, false)
+        ),
+        outline: true,
+        outlineColor: color.withAlpha(0.6),
+        outlineWidth: 2,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+      },
+      description: `<div style="font-family:Inter,sans-serif;padding:10px;background:#0f172a;border-radius:8px">
+        <h3 style="color:${zone.color};margin:0 0 8px;font-size:15px">${zone.label}</h3>
+        <p style="color:#94a3b8;margin:0;font-size:13px">${zone.description}</p>
+      </div>`,
+    });
+
+    zonesAdded++;
+  });
+
+  if (zonesAdded > 0) {
+    console.log(`Added ${zonesAdded} conflict zone overlays`);
+  }
 }
 
 // =============================================
