@@ -1,11 +1,10 @@
 /**
- * Game Theory AI — Cesium Globe Visualization
- * Interactive 3D globe with satellite imagery, player markers, arcs, and fly-to.
+ * Game Theory AI — Cesium Globe Visualization v2
+ * Features: satellite imagery, animated arc pulses, fly-to detail cards, auto-tour
  */
 
 const CESIUM_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzOTg5N2M3MS01ZjBjLTQ2NjYtYWJiZi1hMDYyYThmN2VlNmIiLCJpZCI6NDA0MTU5LCJpYXQiOjE3NzM2MTI3MDF9.klmTKXwvP-wn06nAHKLY6IdXrPwoDAMfs2KzpLN2sr4';
 
-// Country/region -> lat/lng lookup
 const GEO_COORDS = {
   'united states': { lat: 38.9, lng: -77.0, label: 'United States', zoom: 5000000 },
   'us': { lat: 38.9, lng: -77.0, label: 'United States', zoom: 5000000 },
@@ -79,22 +78,32 @@ function resolvePlayerLocations(players) {
   return resolved;
 }
 
+// =============================================
+// GLOBE INIT
+// =============================================
+let _globeViewer = null;
+let _tourRunning = false;
+let _tourTimeout = null;
+
 async function initGlobe(containerId, analysisResult) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  // Set Cesium token
+  // Clean up previous viewer
+  if (_globeViewer) {
+    try { _globeViewer.destroy(); } catch(e) {}
+    _globeViewer = null;
+  }
+  stopTour();
+
   Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
-  // Set container size
   const W = container.clientWidth;
-  const H = Math.min(550, Math.max(400, W * 0.5));
+  const H = Math.min(600, Math.max(420, W * 0.55));
   container.style.height = H + 'px';
   container.innerHTML = '';
 
-  // Create viewer
   const viewer = new Cesium.Viewer(container, {
-    // Terrain loaded async after viewer init
     baseLayerPicker: false,
     geocoder: false,
     homeButton: false,
@@ -106,41 +115,67 @@ async function initGlobe(containerId, analysisResult) {
     vrButton: false,
     infoBox: true,
     selectionIndicator: true,
-    creditContainer: document.createElement('div'), // Hide credits from view
+    creditContainer: document.createElement('div'),
   });
 
-  // Load world terrain (async - new API)
+  // Load terrain
   try {
-    const terrain = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
-    viewer.terrainProvider = terrain;
+    viewer.terrainProvider = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
   } catch(e) {
-    console.warn('Terrain load failed, using ellipsoid:', e);
+    console.warn('Terrain load failed:', e);
   }
 
-  // Dark space background
-  viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#000000');
+  viewer.scene.backgroundColor = Cesium.Color.BLACK;
   viewer.scene.globe.enableLighting = true;
   viewer.scene.globe.atmosphereLightIntensity = 3.0;
-
-  // Remove default imagery and use Cesium World Imagery
   viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0a1628');
 
-  // Resolve players
+  _globeViewer = viewer;
+  container._cesiumViewer = viewer;
+
   const players = analysisResult.players || [];
   const locations = resolvePlayerLocations(players);
 
-  // Add player markers
+  // Store location data for detail cards and tour
+  container._locations = locations;
+  container._analysisResult = analysisResult;
+
+  // =============================================
+  // PLAYER MARKERS with rich info boxes
+  // =============================================
   locations.forEach((loc, i) => {
     const color = Cesium.Color.fromCssColorString(PLAYER_COLORS[i % PLAYER_COLORS.length]);
+    const hexColor = PLAYER_COLORS[i % PLAYER_COLORS.length];
 
-    // Pulsing point marker
+    // Find connections for this player
+    const connections = locations.filter((other, j) => j !== i).map(other => other.label).join(', ');
+
+    // Build rich detail card HTML
+    const detailHtml = `
+      <div style="font-family:Inter,sans-serif;padding:12px;min-width:240px;background:#0f172a;border-radius:8px">
+        <h3 style="color:${hexColor};margin:0 0 10px;font-size:16px;font-weight:700">${loc.label}</h3>
+        <div style="color:#94a3b8;font-size:12px;margin-bottom:8px">
+          <strong style="color:#e2e8f0">Role:</strong> ${loc.name}
+        </div>
+        <div style="color:#94a3b8;font-size:12px;margin-bottom:8px">
+          <strong style="color:#e2e8f0">Connected to:</strong> ${connections}
+        </div>
+        <div style="color:#94a3b8;font-size:12px;margin-bottom:12px">
+          <strong style="color:#e2e8f0">Coordinates:</strong> ${loc.lat.toFixed(2)}, ${loc.lng.toFixed(2)}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="globeFlyToPlayer(${i})" style="background:${hexColor}22;color:${hexColor};border:1px solid ${hexColor}44;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer">Zoom In</button>
+          <button onclick="startTour()" style="background:rgba(251,191,36,0.1);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer">Tour All</button>
+        </div>
+      </div>`;
+
     viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(loc.lng, loc.lat),
       point: {
-        pixelSize: 14,
+        pixelSize: 16,
         color: color.withAlpha(0.9),
         outlineColor: color.withAlpha(0.4),
-        outlineWidth: 8,
+        outlineWidth: 10,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
       },
@@ -152,124 +187,245 @@ async function initGlobe(containerId, analysisResult) {
         outlineWidth: 3,
         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
         verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-        pixelOffset: new Cesium.Cartesian2(0, -20),
+        pixelOffset: new Cesium.Cartesian2(0, -22),
         disableDepthTestDistance: Number.POSITIVE_INFINITY,
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
       },
-      description: `<div style="font-family:Inter,sans-serif;padding:8px">
-        <h3 style="color:${PLAYER_COLORS[i % PLAYER_COLORS.length]};margin:0 0 8px">${loc.label}</h3>
-        <p style="margin:0;color:#ccc">Player in scenario: <strong>${loc.name}</strong></p>
-        <p style="margin:4px 0 0;color:#999;font-size:12px">Click to zoom in. Scroll to zoom further.</p>
-      </div>`,
+      description: detailHtml,
       name: loc.label,
     });
 
-    // Glowing ellipse on ground
+    // Ground glow ellipse
     viewer.entities.add({
       position: Cesium.Cartesian3.fromDegrees(loc.lng, loc.lat),
       ellipse: {
         semiMajorAxis: Math.min(loc.zoom * 0.08, 200000),
         semiMinorAxis: Math.min(loc.zoom * 0.08, 200000),
-        material: color.withAlpha(0.15),
+        material: color.withAlpha(0.12),
         outline: true,
-        outlineColor: color.withAlpha(0.4),
+        outlineColor: color.withAlpha(0.3),
         outlineWidth: 2,
         heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
       },
     });
   });
 
-  // Draw arcs between players
+  // =============================================
+  // ANIMATED ARC PULSES
+  // =============================================
+  const arcEntities = [];
+
   for (let i = 0; i < locations.length; i++) {
     for (let j = i + 1; j < locations.length; j++) {
       const a = locations[i];
       const b = locations[j];
-      const color = Cesium.Color.fromCssColorString(PLAYER_COLORS[(i + j) % PLAYER_COLORS.length]).withAlpha(0.5);
+      const colorHex = PLAYER_COLORS[(i + j) % PLAYER_COLORS.length];
+      const color = Cesium.Color.fromCssColorString(colorHex);
 
-      // Compute arc height based on distance
       const surfaceDist = Cesium.Cartesian3.distance(
         Cesium.Cartesian3.fromDegrees(a.lng, a.lat),
         Cesium.Cartesian3.fromDegrees(b.lng, b.lat)
       );
       const arcHeight = Math.min(surfaceDist * 0.15, 1500000);
 
-      // Create arc as a series of points with elevation
+      // Full arc path (50 points)
       const numPoints = 50;
-      const positions = [];
+      const fullPath = [];
       for (let t = 0; t <= numPoints; t++) {
         const frac = t / numPoints;
         const lat = a.lat + (b.lat - a.lat) * frac;
         const lng = a.lng + (b.lng - a.lng) * frac;
         const height = Math.sin(frac * Math.PI) * arcHeight;
-        positions.push(Cesium.Cartesian3.fromDegrees(lng, lat, height));
+        fullPath.push({ lng, lat, height });
       }
 
+      // Static base arc (dim glow)
       viewer.entities.add({
         polyline: {
-          positions: positions,
-          width: 2,
+          positions: fullPath.map(p => Cesium.Cartesian3.fromDegrees(p.lng, p.lat, p.height)),
+          width: 1.5,
           material: new Cesium.PolylineGlowMaterialProperty({
-            glowPower: 0.3,
-            color: color,
+            glowPower: 0.2,
+            color: color.withAlpha(0.25),
           }),
         },
       });
+
+      // Animated pulse entity (bright segment that travels along the arc)
+      arcEntities.push({ fullPath, color, colorHex, offset: Math.random(), speed: 0.3 + Math.random() * 0.4 });
     }
   }
 
-  // Build player list panel for click-to-fly
-  const listDiv = document.createElement('div');
-  listDiv.style.cssText = 'position:absolute;top:10px;left:10px;z-index:10;display:flex;flex-wrap:wrap;gap:6px;max-width:70%';
+  // Create pulse dot entities
+  const pulseDots = arcEntities.map((arc, idx) => {
+    return viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(arc.fullPath[0].lng, arc.fullPath[0].lat, arc.fullPath[0].height),
+      point: {
+        pixelSize: 5,
+        color: Cesium.Color.fromCssColorString(arc.colorHex).withAlpha(0.9),
+        outlineColor: Cesium.Color.fromCssColorString(arc.colorHex).withAlpha(0.4),
+        outlineWidth: 4,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      },
+    });
+  });
+
+  // Animate pulses along arcs
+  viewer.clock.onTick.addEventListener(() => {
+    const time = Date.now() / 1000;
+    arcEntities.forEach((arc, idx) => {
+      const t = ((time * arc.speed + arc.offset) % 1);
+      const pathIdx = Math.floor(t * (arc.fullPath.length - 1));
+      const p = arc.fullPath[Math.min(pathIdx, arc.fullPath.length - 1)];
+      if (pulseDots[idx]) {
+        pulseDots[idx].position = Cesium.Cartesian3.fromDegrees(p.lng, p.lat, p.height);
+      }
+    });
+  });
+
+  // =============================================
+  // CONTROL PANEL (player buttons + tour)
+  // =============================================
+  const controlDiv = document.createElement('div');
+  controlDiv.style.cssText = 'position:absolute;top:10px;left:10px;z-index:10;display:flex;flex-wrap:wrap;gap:6px;max-width:75%;align-items:center';
+
+  // Tour button
+  const tourBtn = document.createElement('button');
+  tourBtn.id = 'tourBtn';
+  tourBtn.innerHTML = '\u25B6 Tour';
+  tourBtn.style.cssText = 'background:rgba(0,0,0,0.8);color:#fbbf24;border:1px solid rgba(251,191,36,0.4);padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;backdrop-filter:blur(8px);transition:all 0.2s;font-weight:600';
+  tourBtn.addEventListener('click', () => { _tourRunning ? stopTour() : startTour(); });
+  controlDiv.appendChild(tourBtn);
+
+  // Player buttons
   locations.forEach((loc, i) => {
     const btn = document.createElement('button');
     btn.textContent = loc.label;
-    btn.style.cssText = `background:rgba(0,0,0,0.7);color:${PLAYER_COLORS[i % PLAYER_COLORS.length]};border:1px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;backdrop-filter:blur(8px);transition:all 0.2s`;
+    btn.style.cssText = `background:rgba(0,0,0,0.7);color:${PLAYER_COLORS[i % PLAYER_COLORS.length]};border:1px solid ${PLAYER_COLORS[i % PLAYER_COLORS.length]}44;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;backdrop-filter:blur(8px);transition:all 0.2s`;
     btn.addEventListener('mouseenter', () => { btn.style.borderColor = PLAYER_COLORS[i % PLAYER_COLORS.length]; btn.style.background = 'rgba(0,0,0,0.9)'; });
     btn.addEventListener('mouseleave', () => { btn.style.borderColor = PLAYER_COLORS[i % PLAYER_COLORS.length] + '44'; btn.style.background = 'rgba(0,0,0,0.7)'; });
     btn.addEventListener('click', () => {
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(loc.lng, loc.lat, loc.zoom),
-        orientation: {
-          heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-45),
-          roll: 0,
-        },
-        duration: 2.0,
-      });
+      stopTour();
+      globeFlyToPlayer(i);
     });
-    listDiv.appendChild(btn);
+    controlDiv.appendChild(btn);
   });
 
-  // "View All" button
+  // View All button
   const allBtn = document.createElement('button');
   allBtn.textContent = 'View All';
-  allBtn.style.cssText = 'background:rgba(0,0,0,0.7);color:#94a3b8;border:1px solid #94a3b844;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;backdrop-filter:blur(8px);transition:all 0.2s';
-  allBtn.addEventListener('click', () => {
-    viewer.flyTo(viewer.entities, { duration: 2.0 });
-  });
-  listDiv.appendChild(allBtn);
+  allBtn.style.cssText = 'background:rgba(0,0,0,0.7);color:#94a3b8;border:1px solid #94a3b844;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;backdrop-filter:blur(8px);transition:all 0.2s';
+  allBtn.addEventListener('click', () => { stopTour(); viewer.flyTo(viewer.entities, { duration: 2.0 }); });
+  controlDiv.appendChild(allBtn);
 
   container.style.position = 'relative';
-  container.appendChild(listDiv);
+  container.appendChild(controlDiv);
 
-  // Initial view: fly to show all players
-  setTimeout(() => {
-    viewer.flyTo(viewer.entities, { duration: 3.0 });
-  }, 500);
+  // Initial fly-to
+  setTimeout(() => { viewer.flyTo(viewer.entities, { duration: 3.0 }); }, 500);
 
-  // Handle resize
-  const onResize = () => {
+  // Resize handler
+  window.addEventListener('resize', () => {
     const w = container.clientWidth;
-    const h = Math.min(550, Math.max(400, w * 0.5));
-    container.style.height = h + 'px';
-  };
-  window.addEventListener('resize', onResize);
-
-  // Store viewer for fullscreen
-  container._cesiumViewer = viewer;
+    container.style.height = Math.min(600, Math.max(420, w * 0.55)) + 'px';
+  });
 }
 
-// Fullscreen toggle
+// =============================================
+// FLY TO PLAYER (with detail card)
+// =============================================
+function globeFlyToPlayer(index) {
+  const container = document.getElementById('globeContainer');
+  if (!container || !_globeViewer || !container._locations) return;
+  const loc = container._locations[index];
+  if (!loc) return;
+
+  _globeViewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(loc.lng, loc.lat, loc.zoom),
+    orientation: {
+      heading: Cesium.Math.toRadians(15),
+      pitch: Cesium.Math.toRadians(-35),
+      roll: 0,
+    },
+    duration: 2.5,
+    complete: () => {
+      // Select the entity to show info box
+      const entity = _globeViewer.entities.values.find(e => e.name === loc.label);
+      if (entity) _globeViewer.selectedEntity = entity;
+    },
+  });
+}
+
+// =============================================
+// AUTO-TOUR CINEMATIC MODE
+// =============================================
+function startTour() {
+  const container = document.getElementById('globeContainer');
+  if (!container || !_globeViewer || !container._locations) return;
+  if (container._locations.length === 0) return;
+
+  _tourRunning = true;
+  const btn = document.getElementById('tourBtn');
+  if (btn) { btn.innerHTML = '\u25A0 Stop Tour'; btn.style.color = '#f87171'; btn.style.borderColor = 'rgba(248,113,113,0.4)'; }
+
+  let index = 0;
+  const locations = container._locations;
+
+  function visitNext() {
+    if (!_tourRunning || index >= locations.length) {
+      // Loop back or stop
+      if (_tourRunning && locations.length > 0) {
+        index = 0;
+      } else {
+        stopTour();
+        return;
+      }
+    }
+
+    const loc = locations[index];
+    index++;
+
+    _globeViewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(loc.lng, loc.lat, loc.zoom * 0.8),
+      orientation: {
+        heading: Cesium.Math.toRadians(10 + index * 30),
+        pitch: Cesium.Math.toRadians(-30),
+        roll: 0,
+      },
+      duration: 2.5,
+      complete: () => {
+        // Show detail card
+        const entity = _globeViewer.entities.values.find(e => e.name === loc.label);
+        if (entity) _globeViewer.selectedEntity = entity;
+
+        // Wait, then fly to next
+        _tourTimeout = setTimeout(visitNext, 4000);
+      },
+    });
+  }
+
+  // Start with a zoom-out first
+  _globeViewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(
+      locations.reduce((s, l) => s + l.lng, 0) / locations.length,
+      locations.reduce((s, l) => s + l.lat, 0) / locations.length,
+      12000000
+    ),
+    duration: 2.0,
+    complete: () => { _tourTimeout = setTimeout(visitNext, 1000); },
+  });
+}
+
+function stopTour() {
+  _tourRunning = false;
+  if (_tourTimeout) { clearTimeout(_tourTimeout); _tourTimeout = null; }
+  const btn = document.getElementById('tourBtn');
+  if (btn) { btn.innerHTML = '\u25B6 Tour'; btn.style.color = '#fbbf24'; btn.style.borderColor = 'rgba(251,191,36,0.4)'; }
+}
+
+// =============================================
+// FULLSCREEN
+// =============================================
 function toggleGlobeFullscreen() {
   const container = document.getElementById('globeContainer');
   if (!container) return;
@@ -285,25 +441,24 @@ function toggleGlobeFullscreen() {
           container.style.cssText = '';
           container._fakeFS = false;
           document.removeEventListener('keydown', esc);
-          if (container._cesiumViewer) container._cesiumViewer.resize();
+          if (_globeViewer) _globeViewer.resize();
         }
       };
       document.addEventListener('keydown', esc);
     });
   }
-  setTimeout(() => {
-    if (container._cesiumViewer) container._cesiumViewer.resize();
-  }, 200);
+  setTimeout(() => { if (_globeViewer) _globeViewer.resize(); }, 200);
 }
 
+// Exports
 window.initGlobe = initGlobe;
 window.toggleGlobeFullscreen = toggleGlobeFullscreen;
+window.globeFlyToPlayer = globeFlyToPlayer;
+window.startTour = startTour;
+window.stopTour = stopTour;
 
 document.addEventListener('fullscreenchange', () => {
   const btn = document.getElementById('globeFullscreenBtn');
-  if (btn) btn.innerHTML = document.fullscreenElement ? '&#x2716; Exit' : '&#x26F6; Fullscreen';
-  const container = document.getElementById('globeContainer');
-  if (container && container._cesiumViewer) {
-    setTimeout(() => container._cesiumViewer.resize(), 100);
-  }
+  if (btn) btn.innerHTML = document.fullscreenElement ? '\u2716 Exit' : '\u26F6 Fullscreen';
+  if (_globeViewer) setTimeout(() => _globeViewer.resize(), 100);
 });
