@@ -79,7 +79,7 @@ function resolvePlayerLocations(players) {
   return resolved;
 }
 
-function initGlobe(containerId, analysisResult) {
+async function initGlobe(containerId, analysisResult) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -94,7 +94,7 @@ function initGlobe(containerId, analysisResult) {
 
   // Create viewer
   const viewer = new Cesium.Viewer(container, {
-    terrainProvider: Cesium.createWorldTerrain(),
+    // Terrain loaded async after viewer init
     baseLayerPicker: false,
     geocoder: false,
     homeButton: false,
@@ -108,6 +108,14 @@ function initGlobe(containerId, analysisResult) {
     selectionIndicator: true,
     creditContainer: document.createElement('div'), // Hide credits from view
   });
+
+  // Load world terrain (async - new API)
+  try {
+    const terrain = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
+    viewer.terrainProvider = terrain;
+  } catch(e) {
+    console.warn('Terrain load failed, using ellipsoid:', e);
+  }
 
   // Dark space background
   viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#000000');
