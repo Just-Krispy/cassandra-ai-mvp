@@ -415,10 +415,8 @@
             updateCharCount();
         };
 
-        window.analyzeScenario = analyzeScenario;
-
-        // Analyze scenario (REAL IMPLEMENTATION)
-        async function analyzeScenario() {
+        // Wrap the imported analyzeScenario function to handle UI logic
+        window.analyzeScenario = async function() {
             const scenario = document.getElementById('scenario').value.trim();
             
             if (!scenario) {
@@ -437,7 +435,7 @@
             showLoading();
 
             try {
-                // Call the REAL Claude API!
+                // Call the imported analyzeScenario from api-browser.js
                 const result = await analyzeScenario(scenario);
                 
                 // Format and display results
@@ -454,7 +452,7 @@
             } finally {
                 hideLoading();
             }
-        }
+        };
 
         // Make functions globally accessible
         window.promptForApiKey = promptForApiKey;
