@@ -68,7 +68,183 @@
     </style>
     <script src="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Cesium.js"></script>
     <link href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
-    <script src="globe-cesium.js"></script>
+    <script src="globe-cesium.js">
+
+        // =============================================
+        // SCENARIO HISTORY (localStorage)
+        // =============================================
+        const HISTORY_KEY = 'gametheory-history';
+        const MAX_HISTORY = 50;
+
+        function getHistory() {
+            try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+            catch { return []; }
+        }
+
+        function saveToHistory(scenario, result, parentId) {
+            const history = getHistory();
+            const entry = {
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+                timestamp: new Date().toISOString(),
+                scenario: scenario,
+                result: result,
+                parentId: parentId || null,
+                round: parentId ? (history.find(h => h.id === parentId)?.round || 0) + 1 : 1,
+            };
+            history.unshift(entry);
+            if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
+            return entry.id;
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            const history = getHistory();
+            if (!history.length) {
+                list.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No analyses yet. Run a scenario to start building history.</p>';
+                return;
+            }
+            list.innerHTML = history.map((entry, i) => {
+                const date = new Date(entry.timestamp);
+                const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+                const scenarioPreview = entry.scenario.substring(0, 120) + (entry.scenario.length > 120 ? '...' : '');
+                const gameType = entry.result?.gameType || 'Analysis';
+                const score = entry.result?.probabilities ? Math.max(...Object.values(entry.result.probabilities)) * 100 : 0;
+                const roundBadge = entry.round > 1 ? '<span style="background:rgba(232,121,249,0.15);color:#e879f9;padding:2px 8px;border-radius:10px;font-size:10px;margin-left:6px">Round ' + entry.round + '</span>' : '';
+                const players = (entry.result?.players || []).slice(0, 4).join(', ');
+
+                return '<div class="bg-gray-900 rounded-lg p-4 border border-gray-700 hover:border-cyan-500/40 cursor-pointer transition-all" onclick="replayHistory(\'' + entry.id + '\')">'
+                    + '<div class="flex justify-between items-start mb-2">'
+                    + '<div class="text-sm font-medium text-cyan-400">' + gameType + roundBadge + '</div>'
+                    + '<span class="text-xs text-gray-500">' + timeStr + '</span>'
+                    + '</div>'
+                    + '<p class="text-gray-400 text-xs mb-2">' + scenarioPreview + '</p>'
+                    + (players ? '<p class="text-gray-500 text-xs">Players: ' + players + '</p>' : '')
+                    + '</div>';
+            }).join('');
+        }
+
+        window.replayHistory = function(id) {
+            const history = getHistory();
+            const entry = history.find(h => h.id === id);
+            if (!entry) return;
+
+            // Load scenario into textarea
+            document.getElementById('scenario').value = entry.scenario;
+            window.updateCharCount();
+
+            // Show results
+            if (entry.result) {
+                const formattedHtml = formatAnalysisResult(entry.result);
+                document.getElementById('resultContent').innerHTML = formattedHtml;
+                document.getElementById('results').classList.remove('hidden');
+
+                // Show globe
+                if (entry.result.players && entry.result.players.length > 1 && typeof initGlobe === 'function') {
+                    document.getElementById('globeContainer').classList.remove('hidden');
+                    document.getElementById('globeFullscreenBtn').classList.remove('hidden');
+                    setTimeout(function() { initGlobe('globeContainer', entry.result); }, 200);
+                }
+
+                // Show multi-round options
+                showMultiRoundOptions(entry.result, entry.id);
+
+                // Save to history
+                const historyId = saveToHistory(scenario, result, currentAnalysisId);
+                currentAnalysisId = historyId;
+
+                // Show multi-round options
+                showMultiRoundOptions(result, historyId);
+
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+
+        window.clearHistory = function() {
+            if (confirm('Clear all analysis history?')) {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        };
+
+        // =============================================
+        // MULTI-ROUND ANALYSIS
+        // =============================================
+        let currentAnalysisId = null;
+
+        function showMultiRoundOptions(result, historyId) {
+            const panel = document.getElementById('multiRoundPanel');
+            const optionsDiv = document.getElementById('multiRoundOptions');
+            const depthDiv = document.getElementById('multiRoundDepth');
+
+            if (!result.probabilities || Object.keys(result.probabilities).length === 0) {
+                panel.classList.add('hidden');
+                return;
+            }
+
+            currentAnalysisId = historyId;
+
+            // Sort outcomes by probability
+            const sorted = Object.entries(result.probabilities).sort((a, b) => b[1] - a[1]);
+
+            optionsDiv.innerHTML = sorted.map(([outcome, prob]) => {
+                const pct = (prob * 100).toFixed(0);
+                const color = prob > 0.3 ? '#22d3ee' : prob > 0.15 ? '#fbbf24' : '#f87171';
+                return '<button onclick="analyzeNextRound(\'' + outcome.replace(/'/g, "\\'") + '\', ' + prob + ')" '
+                    + 'class="w-full text-left p-3 bg-gray-800 hover:bg-gray-750 rounded-lg border border-gray-700 hover:border-cyan-500/40 transition-all flex justify-between items-center">'
+                    + '<span class="text-gray-300 text-sm">' + outcome.replace(/_/g, ' ') + '</span>'
+                    + '<span style="color:' + color + ';font-weight:600;font-size:13px">' + pct + '%</span>'
+                    + '</button>';
+            }).join('');
+
+            // Show chain depth
+            const history = getHistory();
+            const entry = history.find(h => h.id === historyId);
+            const round = entry?.round || 1;
+            depthDiv.textContent = 'Analysis depth: Round ' + round + (round > 1 ? ' (chained from previous)' : '');
+
+            panel.classList.remove('hidden');
+        }
+
+        window.analyzeNextRound = async function(outcome, probability) {
+            const history = getHistory();
+            const parent = history.find(h => h.id === currentAnalysisId);
+            if (!parent) return;
+
+            const pct = (probability * 100).toFixed(0);
+            const nextScenario = 'PREVIOUS ANALYSIS concluded that "' + outcome.replace(/_/g, ' ') + '" was the most likely outcome (' + pct + '% probability).
+
+'
+                + 'Assuming this outcome has now occurred, analyze the NEXT phase:
+
+'
+                + '1. What are the new decision points for each player?
+'
+                + '2. How have power dynamics shifted?
+'
+                + '3. What new alliances or conflicts emerge?
+'
+                + '4. What are the second-order economic and humanitarian impacts?
+'
+                + '5. What is the new equilibrium and how stable is it?
+
+'
+                + 'Original scenario context: ' + parent.scenario.substring(0, 500);
+
+            // Load into textarea and run
+            document.getElementById('scenario').value = nextScenario;
+            window.updateCharCount();
+            document.getElementById('scenario').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Auto-trigger analysis
+            await window.analyzeScenario();
+        };
+
+        // Render history on page load
+        renderHistory();
+
+    </script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
     <!-- Header -->
@@ -209,6 +385,35 @@
                 <div id="resultContent" class="prose prose-invert max-w-none">
                     <!-- Results will be injected here -->
                 </div>
+
+                <!-- Multi-Round: What Happens Next? -->
+                <div id="multiRoundPanel" class="hidden mt-6 p-5 bg-gray-900 rounded-lg border border-magenta-500/30">
+                    <h4 class="text-lg font-semibold text-magenta-400 mb-3">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+                        What Happens Next?
+                    </h4>
+                    <p class="text-gray-400 text-sm mb-4">Select the most likely outcome to chain the analysis deeper:</p>
+                    <div id="multiRoundOptions" class="space-y-2"></div>
+                    <div id="multiRoundDepth" class="text-xs text-gray-500 mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scenario History -->
+    <section id="historySection" class="max-w-6xl mx-auto px-4 mt-12">
+        <div class="bg-gray-800 rounded-xl p-6 md:p-8 border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-cyan-400">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:6px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Analysis History
+                </h3>
+                <div class="flex gap-2">
+                    <button onclick="clearHistory()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs text-gray-400 border border-gray-600 transition-all">Clear All</button>
+                </div>
+            </div>
+            <div id="historyList" class="space-y-3 max-h-96 overflow-y-auto">
+                <p class="text-gray-500 text-sm text-center py-4">No analyses yet. Run a scenario to start building history.</p>
             </div>
         </div>
     </section>
@@ -408,11 +613,44 @@
 
         // Example scenarios
         const examples = {
-            faang: "I'm deciding between accepting a $200k offer at Google or joining a Series A startup at $140k + 0.5% equity. The startup is in AI infra, growing 20% MoM. I have a family and a mortgage. Google offers stability but slower growth. What are the possible outcomes over 5 years?",
-            business: "I'm considering launching my SaaS product now versus waiting 6 months to add more features. Current competition is low but heating up. I have 3 months runway. If I launch now, the product is minimal but functional. If I wait, it'll be more polished but competitors might enter the market. What should I do?",
-            investment: "I have $50k to invest. Should I put it in S&P 500 index fund (historically 10% annual return) or Bitcoin (volatile but potentially higher returns)? I'm 32, have an emergency fund, and don't need this money for 10 years. How do different market scenarios play out?",
-            geopolitical: "As a tech company, should we continue manufacturing in Taiwan given rising China tensions, or relocate to Vietnam/India now? Taiwan offers superior quality and infrastructure but geopolitical risk. Relocation costs $2M and 18 months, with potential quality issues. How do different geopolitical scenarios affect our business?",
-            career: "I'm offered a promotion requiring relocation from Austin to NYC. Salary increase: $80k → $120k, but NYC cost of living is 60% higher. I love Austin's lifestyle and have a strong community here. The NYC role offers faster career growth and better network. How do lifestyle vs career advancement trade-offs play out over 3-5 years?"
+            faang: `SCENARIO: Senior Engineer Career Decision
+
+PLAYERS: You (engineer), Google (FAANG), AI Startup (Series A, $12M raised)
+OFFERS: Google $220K TC, stable. Startup $150K + 0.4% equity, growing 25% MoM.
+CONSTRAINTS: Family, mortgage, 2 kids in school. Risk tolerance moderate.
+
+Analyze the 5-year expected value of each path considering: equity dilution scenarios, startup failure rates (75% by year 3), FAANG layoff risk, career growth velocity, and work-life balance impact. Model the decision tree with probability-weighted financial outcomes.`,
+
+            business: `SCENARIO: SaaS Launch Timing Decision
+
+PLAYERS: You (founder), 3 emerging competitors, target market (10K potential customers)
+SITUATION: MVP functional but minimal. 3 months runway. Competition heating up.
+OPTION A: Launch now — first mover advantage but product gaps may hurt reputation
+OPTION B: Wait 6 months — polished product but competitors may capture market
+
+Analyze market timing game theory: first-mover advantage decay rate, competitive moat factors, customer switching costs, runway burn vs revenue timeline. Model both paths with revenue projections and failure probability.`,
+
+            investment: `SCENARIO: Portfolio Allocation Decision ($100K, 10-year horizon)
+
+PLAYERS: You (investor, age 32), S&P 500 market, Bitcoin/crypto market, real estate market
+OPTIONS: 100% index / 100% BTC / 60-30-10 split / real estate REIT
+CONTEXT: Emergency fund secured. No debt. Moderate risk tolerance. Don't need funds for 10 years.
+
+Model each allocation across 4 macro scenarios: bull market continuation, recession, stagflation, and tech disruption. Include correlation risk, max drawdown analysis, and tax-adjusted returns. What allocation maximizes risk-adjusted return (Sharpe ratio)?`,
+
+            geopolitical: `SCENARIO: US-Israel-Iran Conflict (March 2026, Day 16)
+
+PLAYERS: US (5000+ strikes launched), Israel (low on interceptors), Iran (Mojtaba Khamenei, 50 waves retaliation), Russia, China, Saudi Arabia, UAE, Hezbollah, Houthis
+SITUATION: 1,444 killed in Iran. Strait of Hormuz contested. 53% Americans oppose war. Gulf bases under fire.
+
+Model 6 branches: continued escalation, interceptor depletion, ceasefire, regime fracture, proxy cascade, US domestic pressure. For each: probability, oil impact, NATO cohesion, nuclear proliferation precedent, and second-order economic effects.`,
+
+            career: `SCENARIO: Relocation vs Remote Career Decision
+
+PLAYERS: You (mid-career professional), Current employer (Austin, TX), New offer (NYC, $120K vs $80K current)
+CONTEXT: NYC cost of living 60% higher. Strong Austin community. NYC role = faster promotion track + elite network. Remote option possible at current job.
+
+Model 4 paths: accept NYC, negotiate remote at new company, stay current + negotiate raise, stay current + side business. Analyze 3-year NPV of each path including: housing delta, tax implications, career trajectory compounding, network value, and quality-of-life factors.`
         };
 
         // Make loadExample globally accessible
@@ -430,7 +668,7 @@
             const counter = document.getElementById('charCount');
             counter.textContent = `${count} / 3000 characters`;
             
-            if (count > 450) {
+            if (count > 2500) {
                 counter.classList.add('text-magenta-400');
                 counter.classList.remove('text-gray-500');
             } else {
