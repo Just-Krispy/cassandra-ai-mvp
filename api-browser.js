@@ -198,7 +198,8 @@ async function makeApiRequest(messages, apiKey) {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': API_CONFIG.apiVersion
+      'anthropic-version': API_CONFIG.apiVersion,
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model: API_CONFIG.model,
