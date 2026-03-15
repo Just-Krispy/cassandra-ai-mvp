@@ -90,6 +90,27 @@
             </div>
         </div>
 
+        <!-- API Key Prompt (hidden by default) -->
+        <div id="api-key-prompt" class="bg-yellow-900/20 border border-yellow-500 rounded-xl p-6 mb-6 hidden">
+            <h3 class="text-lg font-semibold text-yellow-400 mb-3">🔑 API Key Required</h3>
+            <p class="text-gray-300 mb-4">Enter your Anthropic Claude API key to analyze scenarios. Your key is stored locally in your browser.</p>
+            <div class="flex gap-3">
+                <input 
+                    type="password" 
+                    id="api-key-input" 
+                    placeholder="sk-ant-..." 
+                    class="flex-1 px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent outline-none text-gray-100"
+                >
+                <button 
+                    onclick="saveApiKey()" 
+                    class="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg font-semibold transition-all"
+                >
+                    Save
+                </button>
+            </div>
+            <p class="text-gray-500 text-xs mt-2">Get your API key from <a href="https://console.anthropic.com/" target="_blank" class="text-cyan-400 hover:underline">console.anthropic.com</a></p>
+        </div>
+
         <!-- Input Area -->
         <div class="bg-gray-800 rounded-xl p-6 md:p-8 border border-gray-700 shadow-2xl">
             <label for="scenario" class="block text-lg font-semibold mb-3 text-gray-200">
@@ -175,7 +196,187 @@
         </div>
     </footer>
 
-    <script>
+    <script type="module">
+        // Import API functions (browser-compatible version)
+        import { analyzeScenario, testConnection } from './api-browser.js';
+
+        // API Key Management
+        function getApiKey() {
+            return localStorage.getItem('claude-api-key');
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('api-key-input');
+            const key = input.value.trim();
+            
+            if (!key) {
+                alert('Please enter an API key');
+                return;
+            }
+            
+            localStorage.setItem('claude-api-key', key);
+            localStorage.setItem('ANTHROPIC_API_KEY', key); // For api.js
+            document.getElementById('api-key-prompt').style.display = 'none';
+            alert('API key saved! You can now analyze scenarios.');
+        }
+
+        function promptForApiKey() {
+            document.getElementById('api-key-prompt').style.display = 'block';
+            return null;
+        }
+
+        // Show/hide loading state
+        function showLoading() {
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'Analyzing...';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').textContent = 'Analyze Scenario';
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorHtml = `
+                <div class="bg-red-900/20 border border-red-500 rounded-lg p-6 fade-in">
+                    <h4 class="text-lg font-semibold text-red-400 mb-2">❌ Error</h4>
+                    <p class="text-gray-300">${message}</p>
+                    ${!getApiKey() ? '<button onclick="window.promptForApiKey()" class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-all">Enter API Key</button>' : ''}
+                </div>
+            `;
+            
+            document.getElementById('resultContent').innerHTML = errorHtml;
+            document.getElementById('results').classList.remove('hidden');
+        }
+
+        // Format analysis result as HTML
+        function formatAnalysisResult(result) {
+            let html = `<div class="space-y-6">`;
+            
+            // Game Type
+            html += `
+                <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
+                    <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎮 Game Type</h4>
+                    <p class="text-gray-300">${result.gameType}</p>
+                    ${result.players ? `<p class="text-gray-400 text-sm mt-2">Players: ${result.players.join(', ')}</p>` : ''}
+                </div>
+            `;
+            
+            // Analysis
+            html += `
+                <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
+                    <h4 class="text-lg font-semibold text-magenta-400 mb-3">📊 Analysis</h4>
+                    <p class="text-gray-300">${result.analysis}</p>
+                </div>
+            `;
+            
+            // Probabilities
+            if (result.probabilities) {
+                html += `
+                    <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
+                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎲 Probabilities</h4>
+                        <div class="space-y-2">
+                `;
+                
+                for (const [option, prob] of Object.entries(result.probabilities)) {
+                    const percentage = (prob * 100).toFixed(0);
+                    const color = prob > 0.5 ? 'bg-green-500' : prob > 0.3 ? 'bg-yellow-500' : 'bg-red-500';
+                    
+                    html += `
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-300">${option.replace(/_/g, ' ')}</span>
+                                <span class="text-gray-400">${percentage}%</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div class="${color} h-2 rounded-full" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                        <p class="text-gray-400 text-sm mt-3">Confidence: <span class="text-cyan-400">${result.confidence}</span></p>
+                    </div>
+                `;
+            }
+            
+            // Recommendations
+            if (result.recommendations && result.recommendations.length > 0) {
+                html += `
+                    <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
+                        <h4 class="text-lg font-semibold text-magenta-400 mb-3">💡 Recommendations</h4>
+                        <ul class="space-y-2">
+                `;
+                
+                result.recommendations.forEach(rec => {
+                    html += `<li class="flex items-start"><span class="text-cyan-400 mr-2">→</span><span class="text-gray-300">${rec}</span></li>`;
+                });
+                
+                html += `</ul></div>`;
+            }
+            
+            // Payoff Matrix
+            if (result.payoffMatrix) {
+                html += `
+                    <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
+                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">📈 Payoff Matrix</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <tbody>
+                `;
+                
+                for (const [scenario, payoffs] of Object.entries(result.payoffMatrix)) {
+                    html += `
+                        <tr class="border-b border-gray-700">
+                            <td class="py-2 text-gray-400">${scenario.replace(/_/g, ' ')}</td>
+                            <td class="py-2 text-gray-300">${JSON.stringify(payoffs)}</td>
+                        </tr>
+                    `;
+                }
+                
+                html += `</tbody></table></div>`;
+                
+                if (result.nashEquilibrium) {
+                    html += `<p class="text-gray-400 text-sm mt-3"><strong>Nash Equilibrium:</strong> ${result.nashEquilibrium.join('; ')}</p>`;
+                }
+                
+                html += `</div>`;
+            }
+            
+            // Assumptions
+            if (result.assumptions && result.assumptions.length > 0) {
+                html += `
+                    <div class="bg-gray-900 rounded-lg p-5 border border-yellow-500/30">
+                        <h4 class="text-lg font-semibold text-yellow-400 mb-3">⚠️ Key Assumptions</h4>
+                        <ul class="space-y-2">
+                `;
+                
+                result.assumptions.forEach(assumption => {
+                    html += `<li class="flex items-start"><span class="text-yellow-400 mr-2">•</span><span class="text-gray-300">${assumption}</span></li>`;
+                });
+                
+                html += `</ul></div>`;
+            }
+            
+            // Usage stats
+            if (result.usage) {
+                html += `
+                    <div class="bg-gray-900 rounded-lg p-4 border border-gray-700 text-xs text-gray-500">
+                        API Usage: ${result.usage.inputTokens} input + ${result.usage.outputTokens} output tokens (~$${result.usage.cost.toFixed(4)})
+                    </div>
+                `;
+            }
+            
+            html += `</div>`;
+            return html;
+        }
+
         // Example scenarios
         const examples = {
             faang: "I'm deciding between accepting a $200k offer at Google or joining a Series A startup at $140k + 0.5% equity. The startup is in AI infra, growing 20% MoM. I have a family and a mortgage. Google offers stability but slower growth. What are the possible outcomes over 5 years?",
@@ -185,16 +386,16 @@
             career: "I'm offered a promotion requiring relocation from Austin to NYC. Salary increase: $80k → $120k, but NYC cost of living is 60% higher. I love Austin's lifestyle and have a strong community here. The NYC role offers faster career growth and better network. How do lifestyle vs career advancement trade-offs play out over 3-5 years?"
         };
 
-        // Load example scenario
-        function loadExample(type) {
+        // Make loadExample globally accessible
+        window.loadExample = function(type) {
             const textarea = document.getElementById('scenario');
             textarea.value = examples[type];
             updateCharCount();
             textarea.focus();
-        }
+        };
 
-        // Update character count
-        function updateCharCount() {
+        // Make utility functions globally accessible
+        window.updateCharCount = function() {
             const textarea = document.getElementById('scenario');
             const count = textarea.value.length;
             const counter = document.getElementById('charCount');
@@ -207,15 +408,16 @@
                 counter.classList.remove('text-magenta-400');
                 counter.classList.add('text-gray-500');
             }
-        }
+        };
 
-        // Clear input
-        function clearInput() {
+        window.clearInput = function() {
             document.getElementById('scenario').value = '';
             updateCharCount();
-        }
+        };
 
-        // Analyze scenario (mock implementation)
+        window.analyzeScenario = analyzeScenario;
+
+        // Analyze scenario (REAL IMPLEMENTATION)
         async function analyzeScenario() {
             const scenario = document.getElementById('scenario').value.trim();
             
@@ -224,85 +426,42 @@
                 return;
             }
 
-            // Hide results, show loading
-            document.getElementById('results').classList.add('hidden');
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').textContent = 'Analyzing...';
+            // Check for API key
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                promptForApiKey();
+                showError('API key required. Please enter your Claude API key to continue.');
+                return;
+            }
 
-            // Simulate API call (2-3 seconds)
-            await new Promise(resolve => setTimeout(resolve, 2500));
+            showLoading();
 
-            // Mock result (in production, this would be API response)
-            const mockResult = generateMockAnalysis(scenario);
-
-            // Show results
-            document.getElementById('resultContent').innerHTML = mockResult;
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('results').classList.remove('hidden');
-            document.getElementById('submitBtn').disabled = false;
-            document.getElementById('submitBtn').textContent = 'Analyze Scenario';
-
-            // Scroll to results
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            try {
+                // Call the REAL Claude API!
+                const result = await analyzeScenario(scenario);
+                
+                // Format and display results
+                const formattedHtml = formatAnalysisResult(result);
+                document.getElementById('resultContent').innerHTML = formattedHtml;
+                document.getElementById('results').classList.remove('hidden');
+                
+                // Scroll to results
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError(error.message || 'Failed to analyze scenario. Please try again.');
+            } finally {
+                hideLoading();
+            }
         }
 
-        // Generate mock analysis
-        function generateMockAnalysis(scenario) {
-            return `
-                <div class="space-y-6">
-                    <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
-                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎯 Core Decision</h4>
-                        <p class="text-gray-300">This is a classic risk-reward trade-off between stability and upside potential. The decision tree reveals multiple equilibrium points depending on your risk tolerance and time horizon.</p>
-                    </div>
-
-                    <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
-                        <h4 class="text-lg font-semibold text-magenta-400 mb-3">📊 Key Scenarios</h4>
-                        <ul class="space-y-3 text-gray-300">
-                            <li class="flex items-start">
-                                <span class="text-green-400 mr-2">✓</span>
-                                <div><strong>Best Case (30% probability):</strong> High-growth outcome with significant upside from equity and career acceleration.</div>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="text-yellow-400 mr-2">⚠</span>
-                                <div><strong>Base Case (50% probability):</strong> Moderate outcome with incremental gains and manageable downside.</div>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="text-red-400 mr-2">✗</span>
-                                <div><strong>Worst Case (20% probability):</strong> Downside scenario requiring risk mitigation strategies.</div>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
-                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎲 Game Theory Insights</h4>
-                        <p class="text-gray-300 mb-3">Strategic analysis reveals:</p>
-                        <ul class="list-disc list-inside space-y-2 text-gray-300 ml-2">
-                            <li>Nash equilibrium favors the option with better long-term optionality</li>
-                            <li>First-mover advantage exists in fast-changing environments</li>
-                            <li>Information asymmetry suggests gathering more data before commitment</li>
-                            <li>Reversibility of decision affects optimal strategy</li>
-                        </ul>
-                    </div>
-
-                    <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
-                        <h4 class="text-lg font-semibold text-magenta-400 mb-3">💡 Recommendation</h4>
-                        <p class="text-gray-300 mb-3">Based on expected value calculations and risk-adjusted returns:</p>
-                        <div class="bg-gray-800 rounded p-4 border-l-4 border-cyan-500">
-                            <p class="text-gray-100 font-medium">Consider a hybrid strategy that maximizes upside while protecting against downside scenarios. Specific tactics include testing assumptions, building in exit options, and phasing commitments over time.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-900 rounded-lg p-5 border border-gray-700">
-                        <h4 class="text-sm font-semibold text-gray-400 mb-2">⚠️ Important Note</h4>
-                        <p class="text-gray-500 text-sm">This is a demo analysis. Production version would use real game theory models, Monte Carlo simulations, and AI-powered scenario planning.</p>
-                    </div>
-                </div>
-            `;
-        }
+        // Make functions globally accessible
+        window.promptForApiKey = promptForApiKey;
+        window.saveApiKey = saveApiKey;
 
         // Copy results to clipboard
-        async function copyResults() {
+        window.copyResults = async function() {
             const content = document.getElementById('resultContent').innerText;
             try {
                 await navigator.clipboard.writeText(content);
@@ -311,10 +470,10 @@
                 console.error('Failed to copy:', err);
                 alert('Failed to copy results. Please try again.');
             }
-        }
+        };
 
         // Share results (generate shareable URL)
-        function shareResults() {
+        window.shareResults = function() {
             const scenario = document.getElementById('scenario').value;
             // In production, this would create a shareable link via API
             const demoUrl = `${window.location.origin}${window.location.pathname}?share=${btoa(scenario.substring(0, 100))}`;
@@ -324,7 +483,7 @@
             }).catch(() => {
                 alert('Share link:\n\n' + demoUrl);
             });
-        }
+        };
 
         // Load shared scenario from URL
         window.addEventListener('DOMContentLoaded', () => {
@@ -334,7 +493,7 @@
                 try {
                     const decoded = atob(shared);
                     document.getElementById('scenario').value = decoded + '...';
-                    updateCharCount();
+                    window.updateCharCount();
                 } catch (e) {
                     console.error('Failed to load shared scenario:', e);
                 }
