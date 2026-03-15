@@ -119,13 +119,13 @@
             <textarea 
                 id="scenario" 
                 rows="6" 
-                maxlength="500"
+                maxlength="3000"
                 placeholder="Example: I'm deciding between accepting a $200k offer at Google or joining a Series A startup at $140k + 0.5% equity. The startup is in AI infra, growing 20% MoM. I have a family and a mortgage. Google offers stability but slower growth. What are the possible outcomes over 5 years?"
                 class="w-full px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-gray-100 placeholder-gray-500 resize-none"
                 oninput="updateCharCount()"
             ></textarea>
             <div class="flex justify-between items-center mt-2">
-                <span id="charCount" class="text-sm text-gray-500">0 / 500 characters</span>
+                <span id="charCount" class="text-sm text-gray-500">0 / 3000 characters</span>
                 <button 
                     onclick="clearInput()" 
                     class="text-sm text-gray-400 hover:text-gray-200 transition-colors"
@@ -399,7 +399,7 @@
             const textarea = document.getElementById('scenario');
             const count = textarea.value.length;
             const counter = document.getElementById('charCount');
-            counter.textContent = `${count} / 500 characters`;
+            counter.textContent = `${count} / 3000 characters`;
             
             if (count > 450) {
                 counter.classList.add('text-magenta-400');
