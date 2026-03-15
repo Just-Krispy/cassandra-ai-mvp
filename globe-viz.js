@@ -318,3 +318,55 @@ function initGlobe(containerId, analysisResult) {
 
 // Export for use in index.html
 window.initGlobe = initGlobe;
+
+/**
+ * Toggle fullscreen on the globe container.
+ */
+function toggleGlobeFullscreen() {
+  const container = document.getElementById('globeContainer');
+  if (!container) return;
+
+  if (document.fullscreenElement === container) {
+    document.exitFullscreen();
+  } else {
+    container.requestFullscreen().catch(() => {
+      // Fallback: CSS fullscreen
+      container.style.position = 'fixed';
+      container.style.inset = '0';
+      container.style.zIndex = '9999';
+      container.style.height = '100vh';
+      container.style.width = '100vw';
+      container.style.borderRadius = '0';
+      container.style.margin = '0';
+      container._fakeFullscreen = true;
+
+      const esc = (e) => {
+        if (e.key === 'Escape' && container._fakeFullscreen) {
+          container.style.position = '';
+          container.style.inset = '';
+          container.style.zIndex = '';
+          container.style.height = '';
+          container.style.width = '';
+          container.style.borderRadius = '';
+          container.style.margin = '';
+          container._fakeFullscreen = false;
+          document.removeEventListener('keydown', esc);
+          window.dispatchEvent(new Event('resize'));
+        }
+      };
+      document.addEventListener('keydown', esc);
+      window.dispatchEvent(new Event('resize'));
+    });
+  }
+
+  // Trigger resize after fullscreen change to fix canvas dimensions
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+}
+window.toggleGlobeFullscreen = toggleGlobeFullscreen;
+
+// Update button text on fullscreen change
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('globeFullscreenBtn');
+  if (!btn) return;
+  btn.innerHTML = document.fullscreenElement ? '&#x2716; Exit' : '&#x26F6; Fullscreen';
+});

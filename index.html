@@ -194,7 +194,7 @@
                         </button>
                     </div>
                 </div>
-                <div id="globeContainer" class="hidden mb-6 rounded-xl overflow-hidden border border-cyan-500/20" style="min-height:300px;background:radial-gradient(ellipse at center, #0a1628 0%, #000 100%)"></div>
+                <div style="position:relative"><div id="globeContainer" class="hidden mb-6 rounded-xl overflow-hidden border border-cyan-500/20" style="min-height:300px;background:radial-gradient(ellipse at center, #0a1628 0%, #000 100%)"></div><button id="globeFullscreenBtn" onclick="toggleGlobeFullscreen()" class="hidden" style="position:absolute;top:12px;right:12px;z-index:10;background:rgba(0,0,0,0.6);border:1px solid rgba(34,211,238,0.3);color:#22d3ee;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;backdrop-filter:blur(8px)" title="Toggle fullscreen">&#x26F6; Fullscreen</button></div>
                 <div id="resultContent" class="prose prose-invert max-w-none">
                     <!-- Results will be injected here -->
                 </div>
@@ -464,7 +464,7 @@
                 // Scroll to results
                 // Render interactive globe
                 if (result.players && result.players.length > 1 && typeof initGlobe === 'function') {
-                    document.getElementById('globeContainer').classList.remove('hidden');
+                    document.getElementById('globeContainer').classList.remove('hidden'); document.getElementById('globeFullscreenBtn').classList.remove('hidden');
                     setTimeout(function() { initGlobe('globeContainer', result); }, 200);
                 }
 
