@@ -174,43 +174,31 @@ function initGlobe(containerId, analysisResult) {
   dirLight.position.set(50, 30, 50);
   scene.add(dirLight);
 
-  // Globe sphere (wireframe style)
+  // Globe with Earth texture (NASA Blue Marble)
   const RADIUS = 35;
-  const globeGeo = new THREE.SphereGeometry(RADIUS, 48, 48);
+  const globeGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
+  const texLoader = new THREE.TextureLoader();
+  const earthTex = texLoader.load('https://unpkg.com/three-globe@2.41.12/example/img/earth-blue-marble.jpg');
+  const bumpTex = texLoader.load('https://unpkg.com/three-globe@2.41.12/example/img/earth-topology.png');
   const globeMat = new THREE.MeshPhongMaterial({
-    color: 0x0a1628,
+    map: earthTex,
+    bumpMap: bumpTex,
+    bumpScale: 0.8,
+    shininess: 15,
     transparent: true,
-    opacity: 0.85,
-    shininess: 10,
+    opacity: 0.92,
   });
   const globe = new THREE.Mesh(globeGeo, globeMat);
   scene.add(globe);
 
-  // Wireframe overlay
-  const wireGeo = new THREE.SphereGeometry(RADIUS + 0.1, 36, 18);
-  const wireMat = new THREE.MeshBasicMaterial({ color: 0x1e3a5f, wireframe: true, transparent: true, opacity: 0.15 });
+  // Subtle wireframe overlay for tech feel
+  const wireGeo = new THREE.SphereGeometry(RADIUS + 0.15, 36, 18);
+  const wireMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee, wireframe: true, transparent: true, opacity: 0.06 });
   scene.add(new THREE.Mesh(wireGeo, wireMat));
 
-  // Latitude/longitude grid lines
-  const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3050, transparent: true, opacity: 0.2 });
-  for (let lat = -60; lat <= 60; lat += 30) {
-    const pts = [];
-    for (let lng = 0; lng <= 360; lng += 5) {
-      pts.push(latLngToVec3(lat, lng, RADIUS + 0.2));
-    }
-    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
-  }
-  for (let lng = 0; lng < 360; lng += 30) {
-    const pts = [];
-    for (let lat = -90; lat <= 90; lat += 5) {
-      pts.push(latLngToVec3(lat, lng, RADIUS + 0.2));
-    }
-    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
-  }
-
   // Atmosphere glow
-  const atmosGeo = new THREE.SphereGeometry(RADIUS + 2, 48, 48);
-  const atmosMat = new THREE.MeshBasicMaterial({ color: 0x0891b2, transparent: true, opacity: 0.05, side: THREE.BackSide });
+  const atmosGeo = new THREE.SphereGeometry(RADIUS + 2.5, 64, 64);
+  const atmosMat = new THREE.MeshBasicMaterial({ color: 0x0891b2, transparent: true, opacity: 0.08, side: THREE.BackSide });
   scene.add(new THREE.Mesh(atmosGeo, atmosMat));
 
   // Resolve players to globe positions
