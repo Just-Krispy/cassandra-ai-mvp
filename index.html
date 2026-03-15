@@ -27,6 +27,21 @@
         }
     </script>
     <style>
+        
+        @keyframes colorWave {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .color-wave-text {
+            background: linear-gradient(270deg, #22d3ee, #e879f9, #fbbf24, #4ade80, #f87171, #818cf8, #22d3ee);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: colorWave 6s ease infinite;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -41,12 +56,14 @@
             animation: spin 1s linear infinite;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="globe-viz.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
     <!-- Header -->
     <header class="border-b border-gray-800 bg-gray-900/95 backdrop-blur sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-6">
-            <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-magenta-500 bg-clip-text text-transparent">
+            <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-magenta-500 bg-clip-text text-transparent color-wave-text">
                 Game Theory AI
             </h1>
             <p class="text-gray-400 text-sm mt-1">See the Future Before It Happens</p>
@@ -177,6 +194,7 @@
                         </button>
                     </div>
                 </div>
+                <div id="globeContainer" class="hidden mb-6 rounded-xl overflow-hidden border border-cyan-500/20" style="min-height:300px;background:radial-gradient(ellipse at center, #0a1628 0%, #000 100%)"></div>
                 <div id="resultContent" class="prose prose-invert max-w-none">
                     <!-- Results will be injected here -->
                 </div>
@@ -444,6 +462,12 @@
                 document.getElementById('results').classList.remove('hidden');
                 
                 // Scroll to results
+                // Render interactive globe
+                if (result.players && result.players.length > 1 && typeof initGlobe === 'function') {
+                    document.getElementById('globeContainer').classList.remove('hidden');
+                    setTimeout(function() { initGlobe('globeContainer', result); }, 200);
+                }
+
                 document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 
             } catch (error) {
