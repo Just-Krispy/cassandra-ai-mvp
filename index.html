@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassandra AI - See the Future Before It Happens</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyan: {
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                        },
+                        magenta: {
+                            400: '#e879f9',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-gray-800 bg-gray-900/95 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-magenta-500 bg-clip-text text-transparent">
+                Cassandra AI
+            </h1>
+            <p class="text-gray-400 text-sm mt-1">See the Future Before It Happens</p>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="max-w-6xl mx-auto px-4 py-12 md:py-20">
+        <div class="text-center mb-12">
+            <h2 class="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                Make Better Decisions with
+                <span class="bg-gradient-to-r from-cyan-400 to-magenta-500 bg-clip-text text-transparent">
+                    Game Theory + AI
+                </span>
+            </h2>
+            <p class="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
+                Model complex scenarios, analyze strategic outcomes, and predict consequences before you commit. 
+                From career moves to investments, see all possible futures.
+            </p>
+        </div>
+
+        <!-- Example Scenarios -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-4 text-gray-300">Quick Examples:</h3>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="loadExample('faang')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
+                    💼 Job Decision (FAANG vs Startup)
+                </button>
+                <button onclick="loadExample('business')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
+                    🚀 Business Launch (Now vs Wait)
+                </button>
+                <button onclick="loadExample('investment')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
+                    📈 Investment (S&P 500 vs Bitcoin)
+                </button>
+                <button onclick="loadExample('geopolitical')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
+                    🌍 Geopolitical (China/Taiwan)
+                </button>
+                <button onclick="loadExample('career')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
+                    ✈️ Career Move (Stay vs Relocate)
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-gray-800 rounded-xl p-6 md:p-8 border border-gray-700 shadow-2xl">
+            <label for="scenario" class="block text-lg font-semibold mb-3 text-gray-200">
+                Describe Your Scenario
+            </label>
+            <textarea 
+                id="scenario" 
+                rows="6" 
+                maxlength="500"
+                placeholder="Example: I'm deciding between accepting a $200k offer at Google or joining a Series A startup at $140k + 0.5% equity. The startup is in AI infra, growing 20% MoM. I have a family and a mortgage. Google offers stability but slower growth. What are the possible outcomes over 5 years?"
+                class="w-full px-4 py-3 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-gray-100 placeholder-gray-500 resize-none"
+                oninput="updateCharCount()"
+            ></textarea>
+            <div class="flex justify-between items-center mt-2">
+                <span id="charCount" class="text-sm text-gray-500">0 / 500 characters</span>
+                <button 
+                    onclick="clearInput()" 
+                    class="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+                >
+                    Clear
+                </button>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+                id="submitBtn"
+                onclick="analyzeScenario()" 
+                class="w-full mt-6 px-6 py-4 bg-gradient-to-r from-cyan-500 to-magenta-500 hover:from-cyan-600 hover:to-magenta-600 rounded-lg font-semibold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            >
+                Analyze Scenario
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden mt-8 text-center">
+            <div class="inline-block">
+                <svg class="spinner w-12 h-12 text-cyan-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <p class="mt-4 text-gray-400 text-lg">Analyzing possible futures...</p>
+        </div>
+
+        <!-- Results Area -->
+        <div id="results" class="hidden mt-8">
+            <div class="bg-gray-800 rounded-xl p-6 md:p-8 border border-gray-700 shadow-2xl fade-in">
+                <div class="flex justify-between items-start mb-6">
+                    <h3 class="text-2xl font-bold text-cyan-400">Analysis Results</h3>
+                    <div class="flex gap-2">
+                        <button 
+                            onclick="copyResults()" 
+                            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-all border border-gray-600 hover:border-cyan-500"
+                            title="Copy to clipboard"
+                        >
+                            📋 Copy
+                        </button>
+                        <button 
+                            onclick="shareResults()" 
+                            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-all border border-gray-600 hover:border-magenta-500"
+                            title="Share results"
+                        >
+                            🔗 Share
+                        </button>
+                    </div>
+                </div>
+                <div id="resultContent" class="prose prose-invert max-w-none">
+                    <!-- Results will be injected here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 mt-20">
+        <div class="max-w-6xl mx-auto px-4 py-8 text-center">
+            <p class="text-gray-500">
+                Built with <span class="text-cyan-400">game theory</span> + <span class="text-magenta-400">AI</span>
+            </p>
+            <p class="text-gray-600 text-sm mt-2">
+                Cassandra AI © 2026
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Example scenarios
+        const examples = {
+            faang: "I'm deciding between accepting a $200k offer at Google or joining a Series A startup at $140k + 0.5% equity. The startup is in AI infra, growing 20% MoM. I have a family and a mortgage. Google offers stability but slower growth. What are the possible outcomes over 5 years?",
+            business: "I'm considering launching my SaaS product now versus waiting 6 months to add more features. Current competition is low but heating up. I have 3 months runway. If I launch now, the product is minimal but functional. If I wait, it'll be more polished but competitors might enter the market. What should I do?",
+            investment: "I have $50k to invest. Should I put it in S&P 500 index fund (historically 10% annual return) or Bitcoin (volatile but potentially higher returns)? I'm 32, have an emergency fund, and don't need this money for 10 years. How do different market scenarios play out?",
+            geopolitical: "As a tech company, should we continue manufacturing in Taiwan given rising China tensions, or relocate to Vietnam/India now? Taiwan offers superior quality and infrastructure but geopolitical risk. Relocation costs $2M and 18 months, with potential quality issues. How do different geopolitical scenarios affect our business?",
+            career: "I'm offered a promotion requiring relocation from Austin to NYC. Salary increase: $80k → $120k, but NYC cost of living is 60% higher. I love Austin's lifestyle and have a strong community here. The NYC role offers faster career growth and better network. How do lifestyle vs career advancement trade-offs play out over 3-5 years?"
+        };
+
+        // Load example scenario
+        function loadExample(type) {
+            const textarea = document.getElementById('scenario');
+            textarea.value = examples[type];
+            updateCharCount();
+            textarea.focus();
+        }
+
+        // Update character count
+        function updateCharCount() {
+            const textarea = document.getElementById('scenario');
+            const count = textarea.value.length;
+            const counter = document.getElementById('charCount');
+            counter.textContent = `${count} / 500 characters`;
+            
+            if (count > 450) {
+                counter.classList.add('text-magenta-400');
+                counter.classList.remove('text-gray-500');
+            } else {
+                counter.classList.remove('text-magenta-400');
+                counter.classList.add('text-gray-500');
+            }
+        }
+
+        // Clear input
+        function clearInput() {
+            document.getElementById('scenario').value = '';
+            updateCharCount();
+        }
+
+        // Analyze scenario (mock implementation)
+        async function analyzeScenario() {
+            const scenario = document.getElementById('scenario').value.trim();
+            
+            if (!scenario) {
+                alert('Please enter a scenario to analyze.');
+                return;
+            }
+
+            // Hide results, show loading
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').textContent = 'Analyzing...';
+
+            // Simulate API call (2-3 seconds)
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            // Mock result (in production, this would be API response)
+            const mockResult = generateMockAnalysis(scenario);
+
+            // Show results
+            document.getElementById('resultContent').innerHTML = mockResult;
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').textContent = 'Analyze Scenario';
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Generate mock analysis
+        function generateMockAnalysis(scenario) {
+            return `
+                <div class="space-y-6">
+                    <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
+                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎯 Core Decision</h4>
+                        <p class="text-gray-300">This is a classic risk-reward trade-off between stability and upside potential. The decision tree reveals multiple equilibrium points depending on your risk tolerance and time horizon.</p>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
+                        <h4 class="text-lg font-semibold text-magenta-400 mb-3">📊 Key Scenarios</h4>
+                        <ul class="space-y-3 text-gray-300">
+                            <li class="flex items-start">
+                                <span class="text-green-400 mr-2">✓</span>
+                                <div><strong>Best Case (30% probability):</strong> High-growth outcome with significant upside from equity and career acceleration.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-yellow-400 mr-2">⚠</span>
+                                <div><strong>Base Case (50% probability):</strong> Moderate outcome with incremental gains and manageable downside.</div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-red-400 mr-2">✗</span>
+                                <div><strong>Worst Case (20% probability):</strong> Downside scenario requiring risk mitigation strategies.</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg p-5 border border-cyan-500/30">
+                        <h4 class="text-lg font-semibold text-cyan-400 mb-3">🎲 Game Theory Insights</h4>
+                        <p class="text-gray-300 mb-3">Strategic analysis reveals:</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-300 ml-2">
+                            <li>Nash equilibrium favors the option with better long-term optionality</li>
+                            <li>First-mover advantage exists in fast-changing environments</li>
+                            <li>Information asymmetry suggests gathering more data before commitment</li>
+                            <li>Reversibility of decision affects optimal strategy</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg p-5 border border-magenta-500/30">
+                        <h4 class="text-lg font-semibold text-magenta-400 mb-3">💡 Recommendation</h4>
+                        <p class="text-gray-300 mb-3">Based on expected value calculations and risk-adjusted returns:</p>
+                        <div class="bg-gray-800 rounded p-4 border-l-4 border-cyan-500">
+                            <p class="text-gray-100 font-medium">Consider a hybrid strategy that maximizes upside while protecting against downside scenarios. Specific tactics include testing assumptions, building in exit options, and phasing commitments over time.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg p-5 border border-gray-700">
+                        <h4 class="text-sm font-semibold text-gray-400 mb-2">⚠️ Important Note</h4>
+                        <p class="text-gray-500 text-sm">This is a demo analysis. Production version would use real game theory models, Monte Carlo simulations, and AI-powered scenario planning.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Copy results to clipboard
+        async function copyResults() {
+            const content = document.getElementById('resultContent').innerText;
+            try {
+                await navigator.clipboard.writeText(content);
+                alert('Results copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy results. Please try again.');
+            }
+        }
+
+        // Share results (generate shareable URL)
+        function shareResults() {
+            const scenario = document.getElementById('scenario').value;
+            // In production, this would create a shareable link via API
+            const demoUrl = `${window.location.origin}${window.location.pathname}?share=${btoa(scenario.substring(0, 100))}`;
+            
+            navigator.clipboard.writeText(demoUrl).then(() => {
+                alert('Share link copied to clipboard!\n\n' + demoUrl);
+            }).catch(() => {
+                alert('Share link:\n\n' + demoUrl);
+            });
+        }
+
+        // Load shared scenario from URL
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shared = urlParams.get('share');
+            if (shared) {
+                try {
+                    const decoded = atob(shared);
+                    document.getElementById('scenario').value = decoded + '...';
+                    updateCharCount();
+                } catch (e) {
+                    console.error('Failed to load shared scenario:', e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

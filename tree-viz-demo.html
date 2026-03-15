@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cassandra AI - Decision Tree Demo</title>
+  <link rel="stylesheet" href="tree-viz.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #020617;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      color: #f1f5f9;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: #60a5fa;
+      margin-bottom: 2rem;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #tree-container {
+      width: 100%;
+      height: 700px;
+      margin-bottom: 2rem;
+    }
+
+    .info-box {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid #475569;
+    }
+
+    .info-box h2 {
+      color: #60a5fa;
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    .info-box p {
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin: 0.5rem 0;
+    }
+
+    .info-box ul {
+      color: #cbd5e1;
+      line-height: 1.8;
+    }
+
+    .info-box code {
+      background: rgba(15, 23, 42, 0.5);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      color: #60a5fa;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.75rem;
+      }
+
+      #tree-container {
+        height: 500px;
+      }
+
+      .info-box {
+        padding: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔮 Cassandra AI Decision Tree Visualization</h1>
+
+    <div class="info-box">
+      <h2>Interactive Features</h2>
+      <ul>
+        <li><strong>Click nodes</strong> to expand/collapse branches</li>
+        <li><strong>Hover nodes</strong> to see detailed tooltips</li>
+        <li><strong>Scroll to zoom</strong>, drag to pan</li>
+        <li><strong>Color coding</strong>: Blue = decisions, Amber = chance nodes, Green = positive outcomes, Red = negative outcomes</li>
+      </ul>
+    </div>
+
+    <div class="controls">
+      <button onclick="loadExample1()">Example 1: Startup Investment</button>
+      <button onclick="loadExample2()">Example 2: Career Choice</button>
+      <button onclick="loadExample3()">Example 3: Product Launch</button>
+      <button onclick="loadTextExample()">Example 4: Text Format</button>
+    </div>
+
+    <div id="tree-container"></div>
+
+    <div class="info-box">
+      <h2>Integration Example</h2>
+      <p>To use this visualization in your application:</p>
+      <pre><code>// Include D3.js v7
+&lt;script src="https://d3js.org/d3.v7.min.js"&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="tree-viz.css"&gt;
+&lt;script src="tree-viz.js"&gt;&lt;/script&gt;
+
+// Render the tree
+const container = document.getElementById('tree-container');
+const viz = renderDecisionTree(treeData, container);
+
+// Tree data format:
+const treeData = {
+  name: "Decision question",
+  type: "decision",
+  children: [
+    {
+      name: "Option A",
+      type: "chance",
+      probability: "60%",
+      children: [
+        { name: "Good outcome", type: "outcome", value: 100, outcome: "positive" },
+        { name: "Bad outcome", type: "outcome", value: -50, outcome: "negative" }
+      ]
+    }
+  ]
+};</code></pre>
+    </div>
+  </div>
+
+  <!-- Load D3.js v7 -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  
+  <!-- Load visualization module -->
+  <script src="tree-viz.js"></script>
+
+  <script>
+    // Example 1: Startup Investment Decision
+    const example1 = {
+      name: "Should I invest in this startup?",
+      type: "decision",
+      description: "Evaluating a $10,000 investment opportunity",
+      children: [
+        {
+          name: "Invest $10,000",
+          type: "chance",
+          description: "Take the risk",
+          children: [
+            {
+              name: "Startup succeeds",
+              type: "outcome",
+              value: 50000,
+              outcome: "positive",
+              probability: "30%",
+              description: "Company goes public or gets acquired"
+            },
+            {
+              name: "Modest success",
+              type: "outcome",
+              value: 15000,
+              outcome: "positive",
+              probability: "40%",
+              description: "Steady growth, good returns"
+            },
+            {
+              name: "Startup fails",
+              type: "outcome",
+              value: -10000,
+              outcome: "negative",
+              probability: "30%",
+              description: "Complete loss of investment"
+            }
+          ]
+        },
+        {
+          name: "Don't invest",
+          type: "decision",
+          description: "Avoid the risk",
+          children: [
+            {
+              name: "Invest in index fund",
+              type: "outcome",
+              value: 1200,
+              outcome: "neutral",
+              description: "Safe, predictable 12% annual return"
+            },
+            {
+              name: "Keep in savings",
+              type: "outcome",
+              value: 200,
+              outcome: "neutral",
+              description: "Low risk, minimal growth"
+            }
+          ]
+        }
+      ]
+    };
+
+    // Example 2: Career Choice
+    const example2 = {
+      name: "Should I take the new job offer?",
+      type: "decision",
+      description: "Comparing current role vs. new opportunity",
+      children: [
+        {
+          name: "Accept new job",
+          type: "chance",
+          description: "$120k at startup",
+          children: [
+            {
+              name: "Thrive in new role",
+              type: "outcome",
+              value: 100,
+              outcome: "positive",
+              probability: "50%",
+              description: "Career growth, equity value, learning"
+            },
+            {
+              name: "Struggle to adapt",
+              type: "outcome",
+              value: -30,
+              outcome: "negative",
+              probability: "30%",
+              description: "Culture mismatch, stress, regret"
+            },
+            {
+              name: "Company fails",
+              type: "outcome",
+              value: -50,
+              outcome: "negative",
+              probability: "20%",
+              description: "Layoffs, job hunting again"
+            }
+          ]
+        },
+        {
+          name: "Stay at current job",
+          type: "chance",
+          description: "$100k stable position",
+          children: [
+            {
+              name: "Get promotion",
+              type: "outcome",
+              value: 40,
+              outcome: "positive",
+              probability: "40%",
+              description: "Incremental growth, security"
+            },
+            {
+              name: "Status quo",
+              type: "outcome",
+              value: 0,
+              outcome: "neutral",
+              probability: "50%",
+              description: "Comfortable but stagnant"
+            },
+            {
+              name: "Missed opportunity regret",
+              type: "outcome",
+              value: -20,
+              outcome: "negative",
+              probability: "10%",
+              description: "Wonder what could have been"
+            }
+          ]
+        }
+      ]
+    };
+
+    // Example 3: Product Launch
+    const example3 = {
+      name: "Launch product now or wait?",
+      type: "decision",
+      description: "SaaS product readiness decision",
+      children: [
+        {
+          name: "Launch now (80% ready)",
+          type: "chance",
+          description: "Move fast, iterate",
+          children: [
+            {
+              name: "Early adopters love it",
+              type: "outcome",
+              value: 80,
+              outcome: "positive",
+              probability: "40%",
+              description: "Gain market share, valuable feedback"
+            },
+            {
+              name: "Bugs hurt reputation",
+              type: "outcome",
+              value: -40,
+              outcome: "negative",
+              probability: "35%",
+              description: "Negative reviews, customer churn"
+            },
+            {
+              name: "Meh response",
+              type: "outcome",
+              value: 10,
+              outcome: "neutral",
+              probability: "25%",
+              description: "Slow growth, need to pivot"
+            }
+          ]
+        },
+        {
+          name: "Wait 3 months (polish)",
+          type: "chance",
+          description: "Perfect the product",
+          children: [
+            {
+              name: "Polished launch success",
+              type: "outcome",
+              value: 60,
+              outcome: "positive",
+              probability: "60%",
+              description: "Strong launch, good reviews"
+            },
+            {
+              name: "Competitor launches first",
+              type: "outcome",
+              value: -60,
+              outcome: "negative",
+              probability: "30%",
+              description: "Lose first-mover advantage"
+            },
+            {
+              name: "Market shifts",
+              type: "outcome",
+              value: -20,
+              outcome: "negative",
+              probability: "10%",
+              description: "Your solution no longer relevant"
+            }
+          ]
+        }
+      ]
+    };
+
+    // Example 4: Text-based format (demonstrates parsing)
+    const textExample = `
+Should I learn AI/ML or stick with web development?
+
+- Learn AI/ML
+  - Land AI engineer role (40%)
+    → Outcome: High salary, cutting-edge work, future-proof (+90)
+  - Struggle with math (35%)
+    → Outcome: Frustration, wasted time, back to web dev (-30)
+  - Freelance AI consulting (25%)
+    → Outcome: Flexible income, niche expertise (+50)
+
+- Stick with web development
+  - Master full-stack (50%)
+    → Outcome: Steady career growth, reliable income (+40)
+  - Market saturation hits (30%)
+    → Outcome: Harder to compete, lower rates (-20)
+  - Specialize in a framework (20%)
+    → Outcome: Become expert, command premium (+60)
+    `;
+
+    // Load first example on page load
+    let currentViz;
+    
+    function loadExample1() {
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '';
+      currentViz = renderDecisionTree(example1, container);
+    }
+
+    function loadExample2() {
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '';
+      currentViz = renderDecisionTree(example2, container);
+    }
+
+    function loadExample3() {
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '';
+      currentViz = renderDecisionTree(example3, container);
+    }
+
+    function loadTextExample() {
+      const container = document.getElementById('tree-container');
+      container.innerHTML = '';
+      currentViz = renderDecisionTree(textExample, container);
+    }
+
+    // Load first example on page load
+    window.addEventListener('load', () => {
+      loadExample1();
+    });
+  </script>
+</body>
+</html>

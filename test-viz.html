@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tree Viz Test</title>
+  <link rel="stylesheet" href="tree-viz.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #020617;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    #tree-container {
+      width: 100%;
+      height: 600px;
+      margin: 20px auto;
+      max-width: 1200px;
+    }
+    h1 {
+      color: #60a5fa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔮 Decision Tree Visualization Test</h1>
+  <div id="tree-container"></div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="tree-viz.js"></script>
+  <script>
+    // Simple test data
+    const testTree = {
+      name: "Test Decision",
+      type: "decision",
+      children: [
+        {
+          name: "Option A",
+          type: "chance",
+          probability: "60%",
+          children: [
+            { name: "Good outcome", type: "outcome", value: 100, outcome: "positive" },
+            { name: "Bad outcome", type: "outcome", value: -50, outcome: "negative" }
+          ]
+        },
+        {
+          name: "Option B",
+          type: "outcome",
+          value: 0,
+          outcome: "neutral"
+        }
+      ]
+    };
+
+    const container = document.getElementById('tree-container');
+    renderDecisionTree(testTree, container);
+  </script>
+</body>
+</html>

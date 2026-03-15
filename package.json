@@ -1,0 +1,27 @@
+{
+  "name": "cassandra-ai-api",
+  "version": "1.0.0",
+  "description": "Claude API integration for game theory analysis - Cassandra AI MVP",
+  "type": "module",
+  "main": "api.js",
+  "scripts": {
+    "test": "node api.test.js",
+    "test:quick": "node -e \"import('./api.js').then(m => m.testConnection().then(r => console.log(r)))\"",
+    "example": "node examples/basic-usage.js"
+  },
+  "keywords": [
+    "game-theory",
+    "decision-analysis",
+    "claude",
+    "anthropic",
+    "ai"
+  ],
+  "author": "Cassandra AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
