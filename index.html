@@ -272,24 +272,34 @@
             </p>
         </div>
 
-        <!-- Example Scenarios -->
+        <!-- Scenario Templates -->
         <div class="mb-8">
-            <h3 class="text-lg font-semibold mb-4 text-gray-300">Quick Examples:</h3>
-            <div class="flex flex-wrap gap-3">
-                <button onclick="loadExample('faang')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
-                    Career Decision
+            <h3 class="text-lg font-semibold mb-4 text-gray-300">Scenario Templates</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <button onclick="loadExample('faang')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-cyan-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <div class="text-cyan-400 text-sm font-medium">Career Decision</div>
+                    <div class="text-gray-500 text-xs mt-1">FAANG vs Startup equity</div>
                 </button>
-                <button onclick="loadExample('business')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
-                    Launch Timing
+                <button onclick="loadExample('business')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-magenta-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e879f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    <div class="text-magenta-400 text-sm font-medium">Launch Timing</div>
+                    <div class="text-gray-500 text-xs mt-1">Ship now vs wait 6 months</div>
                 </button>
-                <button onclick="loadExample('investment')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
-                    📈 Investment (S&P 500 vs Bitcoin)
+                <button onclick="loadExample('investment')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-green-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                    <div class="text-green-400 text-sm font-medium">Investment</div>
+                    <div class="text-gray-500 text-xs mt-1">S&amp;P 500 vs Bitcoin portfolio</div>
                 </button>
-                <button onclick="loadExample('geopolitical')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
-                    Geopolitical
+                <button onclick="loadExample('geopolitical')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-yellow-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    <div class="text-yellow-400 text-sm font-medium">Geopolitical</div>
+                    <div class="text-gray-500 text-xs mt-1">US-Israel-Iran conflict</div>
                 </button>
-                <button onclick="loadExample('career')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-cyan-500 transition-all text-sm">
-                    ✈️ Career Move (Stay vs Relocate)
+                <button onclick="loadExample('career')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-purple-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <div class="text-purple-400 text-sm font-medium">Relocation</div>
+                    <div class="text-gray-500 text-xs mt-1">Austin vs NYC trade-offs</div>
                 </button>
             </div>
         </div>
