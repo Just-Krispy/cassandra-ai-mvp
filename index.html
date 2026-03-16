@@ -297,6 +297,21 @@
                     <div class="text-purple-400 text-sm font-medium">Relocation</div>
                     <div class="text-gray-500 text-xs mt-1">Austin vs NYC trade-offs</div>
                 </button>
+                <button onclick="loadExample('partnership')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-cyan-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <div class="text-cyan-400 text-sm font-medium">Partnership</div>
+                    <div class="text-gray-500 text-xs mt-1">Should I partner with X?</div>
+                </button>
+                <button onclick="loadExample('pricing')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-magenta-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e879f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <div class="text-magenta-400 text-sm font-medium">Pricing</div>
+                    <div class="text-gray-500 text-xs mt-1">Raise prices or keep low?</div>
+                </button>
+                <button onclick="loadExample('hiring')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-green-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div class="text-green-400 text-sm font-medium">Hiring</div>
+                    <div class="text-gray-500 text-xs mt-1">Hire now or wait?</div>
+                </button>
             </div>
         </div>
 
@@ -741,7 +756,31 @@ Model 6 branches: continued escalation, interceptor depletion, ceasefire, regime
 PLAYERS: You (mid-career professional), Current employer (Austin, TX), New offer (NYC, $120K vs $80K current)
 CONTEXT: NYC cost of living 60% higher. Strong Austin community. NYC role = faster promotion track + elite network. Remote option possible at current job.
 
-Model 4 paths: accept NYC, negotiate remote at new company, stay current + negotiate raise, stay current + side business. Analyze 3-year NPV of each path including: housing delta, tax implications, career trajectory compounding, network value, and quality-of-life factors.`
+Model 4 paths: accept NYC, negotiate remote at new company, stay current + negotiate raise, stay current + side business. Analyze 3-year NPV of each path including: housing delta, tax implications, career trajectory compounding, network value, and quality-of-life factors.`,
+
+            partnership: `SCENARIO: Strategic Partnership Decision
+
+PLAYERS: You (SaaS founder, $50K MRR), Partner Company (established player, 10K customers), your existing customers, competitors
+SITUATION: Partner offers distribution deal — they promote your product to their base in exchange for 30% revenue share + co-branding. Alternative: grow organically via content + ads.
+CONTEXT: 18 months runway. Partner has good reputation but also competing products. Deal is non-exclusive but 2-year commitment.
+
+Model both paths across 24 months: partnership (fast growth but margin hit + dependence risk) vs organic (slower but full control). Include customer acquisition cost, lifetime value, brand dilution risk, and exit optionality. What's the Nash equilibrium if partner has hidden agenda?`,
+
+            pricing: `SCENARIO: SaaS Pricing Strategy Decision
+
+PLAYERS: You (founder, 200 customers at $49/mo), customers (mix of solopreneurs + small teams), 3 competitors ($79-$149/mo)
+SITUATION: Costs rising. Churn stable at 5%. Considering: raise to $79/mo, stay at $49/mo, or add $29 tier + $99 pro tier.
+CONTEXT: Value prop strong but price-sensitive market. Competitors have more features but worse UX. 40% of users would pay more for priority support.
+
+Model 4 scenarios: (1) raise to $79 — estimate churn spike vs ARPU gain, (2) hold at $49 — grow volume but margin squeeze, (3) tiered — segment customers but cannibalization risk, (4) freemium + $99 — land-and-expand but support costs. Include competitor response game theory.`,
+
+            hiring: `SCENARIO: First Engineering Hire Decision
+
+PLAYERS: You (solo founder, profitable side project $8K MRR), potential senior hire ($140K + equity), market opportunity, competitors
+SITUATION: Roadmap backlog is 6+ months. Growing 15% MoM. Hire now = accelerate product + scale, but burn increases and runway drops to 10 months. Wait = slower growth but more runway + keep equity.
+CONTEXT: 2 competitors just raised funding. Market window may close in 12 months. You're technical but building alone is slow.
+
+Model 3 paths: (1) hire senior dev now — burn $12K/mo, ship faster, capture market but higher risk if growth slows, (2) hire junior/part-time — cheaper but still requires your time mentoring, (3) wait 6 months — prove $15K MRR first, safer but may miss window. Include talent market competition and product-market fit risk.`
         };
 
         // Make loadExample globally accessible
