@@ -324,8 +324,25 @@ async function initGlobe(containerId, analysisResult) {
   // Add conflict zone overlays
   addConflictZones(viewer, analysisResult);
 
-  // Initial fly-to
-  setTimeout(() => { viewer.flyTo(viewer.entities, { duration: 3.0 }); }, 500);
+  // Initial fly-to: center on the average of all player positions
+  if (locations.length > 0) {
+    const avgLat = locations.reduce((s, l) => s + l.lat, 0) / locations.length;
+    const avgLng = locations.reduce((s, l) => s + l.lng, 0) / locations.length;
+    // Calculate zoom based on spread
+    const latSpread = Math.max(...locations.map(l => l.lat)) - Math.min(...locations.map(l => l.lat));
+    const lngSpread = Math.max(...locations.map(l => l.lng)) - Math.min(...locations.map(l => l.lng));
+    const spread = Math.max(latSpread, lngSpread);
+    const altitude = Math.max(3000000, spread * 80000);
+    setTimeout(() => {
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(avgLng, avgLat, altitude),
+        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-50), roll: 0 },
+        duration: 3.0,
+      });
+    }, 500);
+  } else {
+    setTimeout(() => { viewer.flyTo(viewer.entities, { duration: 3.0 }); }, 500);
+  }
 
   // Resize handler
   window.addEventListener('resize', () => {
