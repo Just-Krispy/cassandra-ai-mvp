@@ -56,6 +56,65 @@
             animation: colorWave 6s ease infinite;
         }
 
+        
+        /* Mobile-first responsive */
+        @media (max-width: 768px) {
+            .max-w-6xl { padding-left: 12px; padding-right: 12px; }
+            header .text-3xl { font-size: 1.75rem; }
+            header .tracking-widest { font-size: 10px; letter-spacing: 0.15em; }
+            section { padding-top: 1.5rem; }
+            section .text-xl { font-size: 1rem; }
+
+            /* Template cards: 2-col on mobile, hide subtitle */
+            .grid.grid-cols-2 { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .grid.grid-cols-2 .text-xs { display: none; }
+            .grid.grid-cols-2 button { padding: 10px; }
+            .grid.grid-cols-2 svg { width: 16px; height: 16px; }
+
+            /* Input area */
+            textarea { font-size: 14px; rows: 4; }
+            .bg-gray-800.rounded-xl { padding: 16px; }
+
+            /* Results */
+            .bg-gray-900.rounded-lg { padding: 12px; }
+            .text-2xl.font-bold { font-size: 1.25rem; }
+            .flex.gap-2 button { padding: 6px 10px; font-size: 11px; }
+
+            /* Globe */
+            #globeContainer { min-height: 250px !important; }
+
+            /* History cards */
+            #historyList .bg-gray-900 { padding: 10px; }
+
+            /* Comparison overlay */
+            #comparisonOverlay > div > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Action buttons stack */
+            .flex.justify-between.items-start { flex-direction: column; gap: 8px; }
+        }
+
+        @media (max-width: 480px) {
+            header .text-3xl { font-size: 1.5rem; }
+            .grid.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+            section .text-xl { font-size: 0.9rem; }
+            #submitBtn { padding: 14px; font-size: 15px; }
+        }
+
+        /* Touch-friendly tap targets */
+        @media (pointer: coarse) {
+            button { min-height: 44px; }
+            textarea { font-size: 16px; /* prevents iOS zoom on focus */ }
+            input { font-size: 16px; }
+        }
+
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+
+        /* Better text rendering */
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -72,7 +131,8 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="globe-viz.js">
+    <script src="globe-viz.js"></script>
+    <script>
 
         // =============================================
         // SCENARIO HISTORY (localStorage)
@@ -264,7 +324,7 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="max-w-6xl mx-auto px-4 py-12 md:py-20">
+    <section class="max-w-6xl mx-auto px-4 py-6 md:py-20">
         <div class="text-center mb-12">
             <p class="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
                 Game theory meets AI. Analyze decisions, predict outcomes, see the future before you commit.
@@ -300,17 +360,17 @@
                     <div class="text-purple-400 text-sm font-medium">Relocation</div>
                     <div class="text-gray-500 text-xs mt-1">Austin vs NYC trade-offs</div>
                 </button>
-                <button onclick="loadExample('partnership')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-cyan-500/40 transition-all text-left">
+                <button onclick="loadExample('partnership')" class="hidden md:block group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-cyan-500/40 transition-all text-left">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <div class="text-cyan-400 text-sm font-medium">Partnership</div>
                     <div class="text-gray-500 text-xs mt-1">Should I partner with X?</div>
                 </button>
-                <button onclick="loadExample('pricing')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-magenta-500/40 transition-all text-left">
+                <button onclick="loadExample('pricing')" class="hidden md:block group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-magenta-500/40 transition-all text-left">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e879f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     <div class="text-magenta-400 text-sm font-medium">Pricing</div>
                     <div class="text-gray-500 text-xs mt-1">Raise prices or keep low?</div>
                 </button>
-                <button onclick="loadExample('hiring')" class="group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-green-500/40 transition-all text-left">
+                <button onclick="loadExample('hiring')" class="hidden md:block group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-green-500/40 transition-all text-left">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     <div class="text-green-400 text-sm font-medium">Hiring</div>
                     <div class="text-gray-500 text-xs mt-1">Hire now or wait?</div>
@@ -415,6 +475,7 @@
             <div class="bg-gray-800 rounded-xl p-6 md:p-8 border border-gray-700 shadow-2xl fade-in">
                 <div class="flex justify-between items-start mb-6">
                     <h3 class="text-2xl font-bold text-cyan-400">Analysis Results</h3>
+                    <div id="riskScoreCard" class="hidden"></div>
                     <div class="flex gap-2">
                         <button 
                             onclick="copyResults()" 
@@ -599,6 +660,32 @@
 
         // Format analysis result as HTML
         function formatAnalysisResult(result) {
+            // Render risk score card
+            const scoreCard = document.getElementById('riskScoreCard');
+            if (scoreCard && result.probabilities) {
+                const maxProb = Math.max(...Object.values(result.probabilities));
+                const riskScore = Math.round(maxProb * 100);
+                const topOutcome = Object.entries(result.probabilities).sort((a,b) => b[1]-a[1])[0];
+                const scoreColor = riskScore > 60 ? '#f87171' : riskScore > 35 ? '#fbbf24' : '#4ade80';
+                const riskLabel = riskScore > 60 ? 'HIGH RISK' : riskScore > 35 ? 'MODERATE' : 'LOW RISK';
+                scoreCard.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,rgba(15,23,42,0.9),rgba(30,41,59,0.9));border-radius:16px;border:1px solid ${scoreColor}33;margin-bottom:16px">
+                        <div style="position:relative;width:90px;height:90px;flex-shrink:0">
+                            <svg viewBox="0 0 100 100" style="transform:rotate(-90deg)">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="#1f2937" stroke-width="8"/>
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="${scoreColor}" stroke-width="8" stroke-dasharray="${riskScore * 2.64} 264" stroke-linecap="round" style="transition:stroke-dasharray 1s ease"/>
+                            </svg>
+                            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:${scoreColor}">${riskScore}</div>
+                        </div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:13px;font-weight:700;color:${scoreColor};letter-spacing:1px;text-transform:uppercase">${riskLabel}</div>
+                            <div style="font-size:14px;color:#e2e8f0;margin-top:4px">Most likely: <strong>${topOutcome ? topOutcome[0].replace(/_/g,' ') : 'N/A'}</strong></div>
+                            <div style="font-size:12px;color:#94a3b8;margin-top:2px">${result.confidence ? 'Confidence: ' + result.confidence : ''} &middot; ${Object.keys(result.probabilities).length} outcomes analyzed</div>
+                        </div>
+                    </div>`;
+                scoreCard.classList.remove('hidden');
+            }
+
             let html = `<div class="space-y-6">`;
             
             // Game Type
