@@ -37,14 +37,14 @@
         btn.classList.add('opacity-60', 'cursor-not-allowed');
         spinner.classList.remove('hidden');
         icon.classList.add('hidden');
-        label.textContent = 'Enriching...';
+        label.textContent = 'Gathering Intel...';
         break;
       case 'done':
         btn.disabled = true;
         btn.classList.add('opacity-60', 'cursor-not-allowed');
         spinner.classList.add('hidden');
         icon.classList.remove('hidden');
-        label.textContent = 'Enriched';
+        label.textContent = 'Intel Added';
         break;
       case 'ready':
       default:
@@ -52,7 +52,7 @@
         btn.classList.remove('opacity-60', 'cursor-not-allowed');
         spinner.classList.add('hidden');
         icon.classList.remove('hidden');
-        label.textContent = 'Enrich with News';
+        label.textContent = 'Enrich with Live Intel';
         break;
     }
   }
@@ -92,11 +92,39 @@
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          temperature: 0.3,
+          max_tokens: 2048,
+          temperature: 0.2,
           messages: [{
             role: 'user',
-            content: 'Given this scenario topic, provide 5-8 current factual data points that would strengthen the analysis. Include specific numbers, dates, casualty figures, economic data, polling numbers, or diplomatic developments. Format as bullet points I can append to my scenario.\n\nScenario:\n' + scenarioText
+            content: `You are a neutral intelligence analyst gathering REAL, CURRENT data to enrich a game theory scenario analysis.
+
+CRITICAL RULES:
+1. ONLY state VERIFIED FACTS with specific numbers, dates, and sources
+2. Pull from DIVERSE GLOBAL SOURCES to avoid bias:
+   - Western: Reuters, AP, BBC, CNN
+   - Middle East: Al Jazeera, Arab News, Tehran Times
+   - Asian: SCMP, NHK, Times of India
+   - European: DW, France24, The Guardian
+   - Financial: Bloomberg, FT, OPEC reports
+   - Institutional: UN, WHO, World Bank, ACLED
+3. For each fact, note the source in parentheses
+4. Present ALL sides of contested claims — "X claims..., while Y disputes..."
+5. Include economic data: oil prices, currency moves, trade disruptions
+6. Include humanitarian data: casualties from ALL sides, displacement, aid
+7. Do NOT editorialize or assign blame — just facts
+8. Flag any data point where sources disagree
+
+FORMAT: Bullet points, each with source attribution. Group by category:
+- Military/Security
+- Diplomatic/Political
+- Economic/Market
+- Humanitarian
+- Regional Reactions
+
+SCENARIO TO ENRICH:
+${scenarioText}
+
+Search the web for the latest developments and return ONLY verified, sourced facts.`
           }]
         })
       });
@@ -118,7 +146,7 @@
         throw new Error('No enrichment data received.');
       }
 
-      textarea.value = scenarioText + '\n\n--- Live Context ---\n' + enrichment;
+      textarea.value = scenarioText + '\n\n--- LIVE INTELLIGENCE (multi-source, verified) ---\n' + enrichment;
 
       if (typeof window.updateCharCount === 'function') {
         window.updateCharCount();
@@ -142,7 +170,7 @@
     textarea.addEventListener('input', function() {
       const currentLength = textarea.value.length;
       if (Math.abs(currentLength - lastLength) > 5 || currentLength < lastLength) {
-        if (!textarea.value.includes('--- Live Context ---')) {
+        if (!textarea.value.includes('--- LIVE INTELLIGENCE')) {
           setEnrichButtonState('ready');
         }
       }
