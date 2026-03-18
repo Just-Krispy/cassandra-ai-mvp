@@ -94,9 +94,14 @@
           model: 'claude-sonnet-4-20250514',
           max_tokens: 4096,
           temperature: 0.2,
+          tools: [{ type: 'web_search', name: 'web_search', max_uses: 10 }],
           messages: [{
             role: 'user',
-            content: `You are a neutral intelligence analyst gathering REAL, CURRENT data to enrich a game theory scenario analysis.
+            content: `You are a neutral intelligence analyst gathering REAL-TIME, CURRENT data to enrich a game theory scenario analysis.
+
+TODAY'S DATE: ${new Date().toISOString().slice(0,10)}
+
+MANDATORY: Use the web_search tool to find the LATEST news and data. Search for developments from the LAST 7 DAYS ONLY. Do NOT rely on your training data — search the web for every data point. If you cannot find a current source, say so rather than guessing.
 
 CRITICAL RULES:
 1. ONLY state VERIFIED FACTS with specific numbers, dates, and sources
@@ -157,7 +162,17 @@ Search the web for the latest developments and return ONLY verified, sourced fac
       }
 
       const data = await response.json();
-      const enrichment = (data.content && data.content[0] && data.content[0].text) || '';
+      // With web_search tool, response has multiple content blocks (tool_use, search_results, text)
+      // Extract all text blocks and combine them
+      let enrichment = '';
+      if (data.content && Array.isArray(data.content)) {
+        for (const block of data.content) {
+          if (block.type === 'text' && block.text) {
+            enrichment += block.text + '\n';
+          }
+        }
+      }
+      enrichment = enrichment.trim();
 
       if (!enrichment) {
         throw new Error('No enrichment data received.');
