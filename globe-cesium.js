@@ -144,17 +144,19 @@ async function initGlobe(containerId, analysisResult) {
     Cesium.CameraEventType.WHEEL,
     Cesium.CameraEventType.PINCH,
   ];
-  controller.inertiaZoom = 0.8;            // Smooth zoom deceleration
+  controller.inertiaZoom = 0.8;
+  controller.inertiaSpin = 0.9;              // Smooth rotation glide after release
+  controller.inertiaTranslate = 0.9;         // Smooth pan glide            // Smooth zoom deceleration
 
   // Left click+drag = rotate/orbit globe
   controller.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
   controller.inertiaRotate = 0.9;          // Smooth rotation momentum
 
-  // Right click+drag = zoom (alternative to scroll)
-  controller.zoomEventTypes.push(Cesium.CameraEventType.RIGHT_DRAG);
-
-  // Middle click+drag = pan/translate
-  controller.translateEventTypes = [Cesium.CameraEventType.MIDDLE_DRAG];
+  // Right click+drag = pan/translate (like Google Maps)
+  controller.translateEventTypes = [
+    Cesium.CameraEventType.RIGHT_DRAG,
+    Cesium.CameraEventType.MIDDLE_DRAG,
+  ];
 
   // Tilt with Ctrl+left drag or two-finger tilt on mobile
   controller.tiltEventTypes = [
@@ -167,11 +169,14 @@ async function initGlobe(containerId, analysisResult) {
   controller.enableRotate = true;
   controller.enableTranslate = true;
   controller.enableZoom = true;
+  controller.bounceAnimationTime = 2.0;      // Elastic bounce when hitting zoom limits
   controller.enableTilt = true;
-  controller.enableLook = true;
+  controller.enableLook = false;  // Disable first-person look (globe mode only)
 
   // Prevent camera from going below terrain
   viewer.scene.globe.depthTestAgainstTerrain = true;
+  controller.enableCollisionDetection = true;
+  controller.minimumCollisionTerrainHeight = 15000;  // Collision check below 15km
 
   // Mobile: improve touch responsiveness
   controller.minimumPickingTerrainDistanceWithInertia = 2000;
@@ -364,7 +369,7 @@ async function initGlobe(containerId, analysisResult) {
   allBtn.addEventListener('click', () => {
     stopTour();
     if (container._homeView) {
-      viewer.camera.flyTo({ ...container._homeView, duration: 2.0, easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT });
+      viewer.camera.flyTo({ ...container._homeView, duration: 2.0, easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT });
     } else {
       viewer.flyTo(viewer.entities, { duration: 2.0 });
     }
@@ -411,7 +416,7 @@ async function initGlobe(containerId, analysisResult) {
       viewer.camera.flyTo({
         ..._homeView,
         duration: 3.0,
-        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+        easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
       });
     }, 500);
   } else {
@@ -420,6 +425,18 @@ async function initGlobe(containerId, analysisResult) {
 
   // Store home view for View All button
   container._homeView = _homeView;
+
+  // Underground prevention — clamp camera above terrain
+  viewer.scene.preUpdate.addEventListener(() => {
+    const height = viewer.camera.positionCartographic.height;
+    if (height < 500) {
+      const carto = viewer.camera.positionCartographic;
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromRadians(carto.longitude, carto.latitude, 500),
+        orientation: { heading: viewer.camera.heading, pitch: viewer.camera.pitch, roll: viewer.camera.roll },
+      });
+    }
+  });
 
   // Resize handler
   window.addEventListener('resize', () => {
@@ -603,7 +620,8 @@ function startTour() {
         roll: 0,
       },
       duration: 2.5,
-      easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+      easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
+      maximumHeight: 8000000,
       complete: () => {
         // Show detail card
         const entity = _globeViewer.entities.values.find(e => e.name === loc.label);
@@ -628,7 +646,7 @@ function startTour() {
       roll: 0,
     },
     duration: 2.0,
-    easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+    easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
     complete: () => { _tourTimeout = setTimeout(visitNext, 1500); },
   });
 }
@@ -646,7 +664,7 @@ function stopTour() {
       _globeViewer.camera.flyTo({
         ...container._homeView,
         duration: 2.0,
-        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+        easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT,
       });
     }, 300);
   }
