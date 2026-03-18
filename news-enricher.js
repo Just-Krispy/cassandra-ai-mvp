@@ -37,14 +37,14 @@
         btn.classList.add('opacity-60', 'cursor-not-allowed');
         spinner.classList.remove('hidden');
         icon.classList.add('hidden');
-        label.textContent = 'Gathering Intel...';
+        label.textContent = 'Enriching...';
         break;
       case 'done':
         btn.disabled = true;
         btn.classList.add('opacity-60', 'cursor-not-allowed');
         spinner.classList.add('hidden');
         icon.classList.remove('hidden');
-        label.textContent = 'Intel Added';
+        label.textContent = 'Enriched';
         break;
       case 'ready':
       default:
@@ -52,7 +52,7 @@
         btn.classList.remove('opacity-60', 'cursor-not-allowed');
         spinner.classList.add('hidden');
         icon.classList.remove('hidden');
-        label.textContent = 'Enrich with Live Intel';
+        label.textContent = 'Enrich with News';
         break;
     }
   }
