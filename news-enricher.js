@@ -92,7 +92,7 @@
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 2048,
+          max_tokens: 4096,
           temperature: 0.2,
           messages: [{
             role: 'user',
@@ -100,13 +100,21 @@
 
 CRITICAL RULES:
 1. ONLY state VERIFIED FACTS with specific numbers, dates, and sources
-2. Pull from DIVERSE GLOBAL SOURCES to avoid bias:
-   - Western: Reuters, AP, BBC, CNN
-   - Middle East: Al Jazeera, Arab News, Tehran Times
-   - Asian: SCMP, NHK, Times of India
-   - European: DW, France24, The Guardian
-   - Financial: Bloomberg, FT, OPEC reports
-   - Institutional: UN, WHO, World Bank, ACLED
+2. Pull from the WIDEST POSSIBLE range of GLOBAL SOURCES to fight bias:
+   - Wire Services: Reuters, AP, AFP, Xinhua, TASS, Anadolu Agency
+   - US/UK: CNN, BBC, NPR, NYT, Washington Post, Wall Street Journal, The Economist
+   - Middle East: Al Jazeera, Al Arabiya, Arab News, Tehran Times, Haaretz, Times of Israel, Middle East Eye
+   - Asian: SCMP, NHK, Nikkei Asia, Times of India, Hindustan Times, Channel News Asia, Straits Times
+   - European: DW, France24, The Guardian, Der Spiegel, Le Monde, EuroNews, Politico EU
+   - African: Africa News, Daily Maverick, The East African, Nation Africa
+   - Latin American: EFE, Folha de S.Paulo, La Nacion, Infobae
+   - Russian/Post-Soviet: RT (flag as state media), TASS (flag as state media), Moscow Times, Meduza
+   - Financial/Markets: Bloomberg, Financial Times, CNBC, MarketWatch, Oil Price, S&P Global, OPEC Monthly Report
+   - Defense/Security: Jane's, IISS, RUSI, War on the Rocks, Defense One, The War Zone
+   - Think Tanks: RAND, Brookings, CFR, Chatham House, Carnegie, SIPRI, Crisis Group, Atlantic Council
+   - Institutional/Data: UN OCHA, WHO, World Bank, IMF, ACLED, UNHCR, IAEA, Amnesty International, HRW
+   - Open Source Intel: Bellingcat, OSINT aggregators, satellite imagery reports
+   - Social/Ground Truth: Verified journalist accounts, official government statements, military communiques
 3. For each fact, note the source in parentheses
 4. Present ALL sides of contested claims — "X claims..., while Y disputes..."
 5. Include economic data: oil prices, currency moves, trade disruptions
@@ -115,11 +123,20 @@ CRITICAL RULES:
 8. Flag any data point where sources disagree
 
 FORMAT: Bullet points, each with source attribution. Group by category:
-- Military/Security
-- Diplomatic/Political
-- Economic/Market
-- Humanitarian
-- Regional Reactions
+- Military/Security (troop movements, strikes, casualties from ALL sides, weapons used, defense systems)
+- Diplomatic/Political (negotiations, UN votes, sanctions, statements from each government)
+- Economic/Market (oil prices, currency moves, trade disruptions, sanctions impact, shipping insurance rates, stock markets)
+- Humanitarian (civilian casualties ALL sides, displacement numbers, aid access, infrastructure damage, food/water/medical)
+- Intelligence/OSINT (satellite imagery findings, verified social media, intercepted communications if public)
+- Regional Reactions (neighboring countries' positions, military posture changes, alliance shifts)
+- Domestic Politics (polling in each country, protests, political opposition statements, election impacts)
+- Legal/International Law (ICJ rulings, war crimes allegations from both sides, Geneva Convention issues)
+- Information Warfare (competing narratives, disinformation identified, media restrictions, internet shutdowns)
+- Long-term Projections (think tank forecasts, economic modeling, reconstruction estimates)
+
+IMPORTANT: For EVERY contested fact, present it as: "Source A reports X, while Source B reports Y"
+Flag ALL state media sources explicitly: (TASS - Russian state media), (IRNA - Iranian state media), etc.
+Include data freshness: note the date of each data point where possible.
 
 SCENARIO TO ENRICH:
 ${scenarioText}
