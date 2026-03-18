@@ -104,6 +104,7 @@ async function initGlobe(containerId, analysisResult) {
   container.innerHTML = '';
 
   const viewer = new Cesium.Viewer(container, {
+    terrain: Cesium.Terrain.fromWorldTerrain(),
     baseLayerPicker: false,
     geocoder: false,
     homeButton: false,
@@ -117,13 +118,6 @@ async function initGlobe(containerId, analysisResult) {
     selectionIndicator: true,
     creditContainer: document.createElement('div'),
   });
-
-  // Load terrain
-  try {
-    viewer.terrainProvider = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
-  } catch(e) {
-    console.warn('Terrain load failed:', e);
-  }
 
   viewer.scene.backgroundColor = Cesium.Color.BLACK;
   viewer.scene.globe.enableLighting = true;
