@@ -130,6 +130,52 @@ async function initGlobe(containerId, analysisResult) {
   viewer.scene.globe.atmosphereLightIntensity = 3.0;
   viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#0a1628');
 
+  // =============================================
+  // CAMERA CONTROLS OPTIMIZATION
+  // =============================================
+  const controller = viewer.scene.screenSpaceCameraController;
+
+  // Zoom limits — prevent going underground or too far out
+  controller.minimumZoomDistance = 50000;     // ~50km min (street-level zoom)
+  controller.maximumZoomDistance = 30000000;  // ~30,000km max (full globe view)
+
+  // Smooth zoom with inertia
+  controller.zoomEventTypes = [
+    Cesium.CameraEventType.WHEEL,
+    Cesium.CameraEventType.PINCH,
+  ];
+  controller.inertiaZoom = 0.8;            // Smooth zoom deceleration
+
+  // Left click+drag = rotate/orbit globe
+  controller.rotateEventTypes = [Cesium.CameraEventType.LEFT_DRAG];
+  controller.inertiaRotate = 0.9;          // Smooth rotation momentum
+
+  // Right click+drag = zoom (alternative to scroll)
+  controller.zoomEventTypes.push(Cesium.CameraEventType.RIGHT_DRAG);
+
+  // Middle click+drag = pan/translate
+  controller.translateEventTypes = [Cesium.CameraEventType.MIDDLE_DRAG];
+
+  // Tilt with Ctrl+left drag or two-finger tilt on mobile
+  controller.tiltEventTypes = [
+    { eventType: Cesium.CameraEventType.LEFT_DRAG, modifier: Cesium.KeyboardEventModifier.CTRL },
+    { eventType: Cesium.CameraEventType.PINCH, modifier: undefined },
+  ];
+  controller.inertiaTilt = 0.8;
+
+  // Enable smooth look-at behavior
+  controller.enableRotate = true;
+  controller.enableTranslate = true;
+  controller.enableZoom = true;
+  controller.enableTilt = true;
+  controller.enableLook = true;
+
+  // Prevent camera from going below terrain
+  viewer.scene.globe.depthTestAgainstTerrain = true;
+
+  // Mobile: improve touch responsiveness
+  controller.minimumPickingTerrainDistanceWithInertia = 2000;
+
   _globeViewer = viewer;
   container._cesiumViewer = viewer;
 
@@ -315,7 +361,14 @@ async function initGlobe(containerId, analysisResult) {
   const allBtn = document.createElement('button');
   allBtn.textContent = 'View All';
   allBtn.style.cssText = 'background:rgba(0,0,0,0.7);color:#94a3b8;border:1px solid #94a3b844;padding:4px 12px;border-radius:20px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;backdrop-filter:blur(8px);transition:all 0.2s';
-  allBtn.addEventListener('click', () => { stopTour(); viewer.flyTo(viewer.entities, { duration: 2.0 }); });
+  allBtn.addEventListener('click', () => {
+    stopTour();
+    if (container._homeView) {
+      viewer.camera.flyTo({ ...container._homeView, duration: 2.0, easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT });
+    } else {
+      viewer.flyTo(viewer.entities, { duration: 2.0 });
+    }
+  });
   controlDiv.appendChild(allBtn);
 
   container.style.position = 'relative';
@@ -324,25 +377,49 @@ async function initGlobe(containerId, analysisResult) {
   // Add conflict zone overlays
   addConflictZones(viewer, analysisResult);
 
-  // Initial fly-to: center on the average of all player positions
+  // Initial fly-to: center on the conflict region with proper framing
+  // Store home position for reset after tour
+  let _homeView = null;
   if (locations.length > 0) {
+    // Calculate weighted center (bias toward more clustered players)
     const avgLat = locations.reduce((s, l) => s + l.lat, 0) / locations.length;
     const avgLng = locations.reduce((s, l) => s + l.lng, 0) / locations.length;
-    // Calculate zoom based on spread
-    const latSpread = Math.max(...locations.map(l => l.lat)) - Math.min(...locations.map(l => l.lat));
-    const lngSpread = Math.max(...locations.map(l => l.lng)) - Math.min(...locations.map(l => l.lng));
-    const spread = Math.max(latSpread, lngSpread);
-    const altitude = Math.max(3000000, spread * 80000);
+
+    // Calculate altitude from bounding extent
+    const minLat = Math.min(...locations.map(l => l.lat));
+    const maxLat = Math.max(...locations.map(l => l.lat));
+    const minLng = Math.min(...locations.map(l => l.lng));
+    const maxLng = Math.max(...locations.map(l => l.lng));
+    const latSpan = maxLat - minLat;
+    const lngSpan = maxLng - minLng;
+    const maxSpan = Math.max(latSpan, lngSpan);
+
+    // Convert span to altitude (degrees to meters, roughly)
+    // 1 degree ~= 111km, we want camera far enough to see all players
+    const altitude = Math.max(2000000, maxSpan * 111000 * 1.8);
+
+    _homeView = {
+      destination: Cesium.Cartesian3.fromDegrees(avgLng, avgLat - 5, altitude),
+      orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-40),
+        roll: 0,
+      },
+    };
+
     setTimeout(() => {
       viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(avgLng, avgLat, altitude),
-        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-50), roll: 0 },
+        ..._homeView,
         duration: 3.0,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
       });
     }, 500);
   } else {
     setTimeout(() => { viewer.flyTo(viewer.entities, { duration: 3.0 }); }, 500);
   }
+
+  // Store home view for View All button
+  container._homeView = _homeView;
 
   // Resize handler
   window.addEventListener('resize', () => {
@@ -526,6 +603,7 @@ function startTour() {
         roll: 0,
       },
       duration: 2.5,
+      easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
       complete: () => {
         // Show detail card
         const entity = _globeViewer.entities.values.find(e => e.name === loc.label);
@@ -537,15 +615,21 @@ function startTour() {
     });
   }
 
-  // Start with a zoom-out first
+  // Start with a zoom-out to show full region
+  const tourCenter = {
+    lng: locations.reduce((s, l) => s + l.lng, 0) / locations.length,
+    lat: locations.reduce((s, l) => s + l.lat, 0) / locations.length,
+  };
   _globeViewer.camera.flyTo({
-    destination: Cesium.Cartesian3.fromDegrees(
-      locations.reduce((s, l) => s + l.lng, 0) / locations.length,
-      locations.reduce((s, l) => s + l.lat, 0) / locations.length,
-      12000000
-    ),
+    destination: Cesium.Cartesian3.fromDegrees(tourCenter.lng, tourCenter.lat - 5, 15000000),
+    orientation: {
+      heading: Cesium.Math.toRadians(0),
+      pitch: Cesium.Math.toRadians(-40),
+      roll: 0,
+    },
     duration: 2.0,
-    complete: () => { _tourTimeout = setTimeout(visitNext, 1000); },
+    easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+    complete: () => { _tourTimeout = setTimeout(visitNext, 1500); },
   });
 }
 
@@ -554,6 +638,18 @@ function stopTour() {
   if (_tourTimeout) { clearTimeout(_tourTimeout); _tourTimeout = null; }
   const btn = document.getElementById('tourBtn');
   if (btn) { btn.innerHTML = '\u25B6 Tour'; btn.style.color = '#fbbf24'; btn.style.borderColor = 'rgba(251,191,36,0.4)'; }
+
+  // Return to home view after tour ends
+  const container = document.getElementById('globeContainer');
+  if (_globeViewer && container && container._homeView) {
+    setTimeout(() => {
+      _globeViewer.camera.flyTo({
+        ...container._homeView,
+        duration: 2.0,
+        easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+      });
+    }, 300);
+  }
 }
 
 // =============================================
