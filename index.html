@@ -568,6 +568,7 @@
             localStorage.setItem('claude-api-key', key);
             localStorage.setItem('ANTHROPIC_API_KEY', key); // For api.js
             document.getElementById('api-key-prompt').style.display = 'none';
+            document.getElementById('changeKeyLink').style.display = 'inline';
             alert('API key saved! You can now analyze scenarios.');
         }
 
@@ -862,7 +863,14 @@ Model 3 paths: (1) hire senior dev now — burn $12K/mo, ship faster, capture ma
                 
             } catch (error) {
                 console.error('Analysis error:', error);
-                showError(error.message || 'Failed to analyze scenario. Please try again.');
+                const msg = error.message || 'Failed to analyze scenario.';
+                showError(msg);
+                // If auth error, clear bad key and re-prompt
+                if (msg.includes('Invalid API key') || msg.includes('API key') || msg.includes('401') || msg.includes('credentials')) {
+                    localStorage.removeItem('claude-api-key');
+                    localStorage.removeItem('ANTHROPIC_API_KEY');
+                    promptForApiKey();
+                }
             } finally {
                 hideLoading();
             }
@@ -870,6 +878,11 @@ Model 3 paths: (1) hire senior dev now — burn $12K/mo, ship faster, capture ma
 
         // Make functions globally accessible
         window.promptForApiKey = promptForApiKey;
+        // Show change-key link if a key is already saved
+        if (getApiKey()) {
+            const ckl = document.getElementById('changeKeyLink');
+            if (ckl) ckl.style.display = 'inline';
+        }
         window.saveApiKey = saveApiKey;
 
         // Copy results to clipboard

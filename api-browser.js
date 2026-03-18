@@ -216,7 +216,9 @@ async function makeApiRequest(messages, apiKey) {
     if (response.status === 429) {
       throw new Error('Rate limit exceeded. Please wait before making another request.');
     } else if (response.status === 401) {
-      throw new Error('Invalid API key. Please check your credentials and try again.');
+      localStorage.removeItem('claude-api-key');
+      localStorage.removeItem('ANTHROPIC_API_KEY');
+      throw new Error('Invalid API key. Your key has been cleared — please enter a valid key.');
     } else if (response.status === 400) {
       throw new Error(`Bad request: ${error.error?.message || 'Invalid request format'}`);
     } else {
