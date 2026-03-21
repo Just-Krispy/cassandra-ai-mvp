@@ -94,7 +94,7 @@
           model: 'claude-sonnet-4-20250514',
           max_tokens: 4096,
           temperature: 0.2,
-          tools: [{ type: 'web_search', name: 'web_search', max_uses: 10 }],
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 10 }],
           messages: [{
             role: 'user',
             content: `You are a neutral intelligence analyst gathering REAL-TIME, CURRENT data to enrich a game theory scenario analysis.
