@@ -422,25 +422,48 @@
                 </button>
             </div>
 
-            <!-- Enrich with News Button -->
-            <button
-                id="enrichBtn"
-                onclick="enrichScenario()"
-                class="w-full mt-4 px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-cyan-500/30 hover:border-cyan-400/60 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 group"
-            >
-                <span id="enrichIcon" class="inline-flex">
-                    <svg class="w-5 h-5 text-cyan-400 group-hover:text-cyan-300 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
-                    </svg>
-                </span>
-                <span id="enrichSpinner" class="hidden inline-flex">
-                    <svg class="animate-spin w-5 h-5 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </span>
-                <span id="enrichLabel" class="text-cyan-400 group-hover:text-cyan-300 transition-colors">Enrich with News</span>
-            </button>
+            <!-- Enrich Buttons Row -->
+            <div class="flex gap-3 mt-4">
+                <!-- Enrich with News Button (current/live news only) -->
+                <button
+                    id="enrichBtn"
+                    onclick="enrichScenario()"
+                    class="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-cyan-500/30 hover:border-cyan-400/60 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 group"
+                >
+                    <span id="enrichIcon" class="inline-flex">
+                        <svg class="w-5 h-5 text-cyan-400 group-hover:text-cyan-300 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+                        </svg>
+                    </span>
+                    <span id="enrichSpinner" class="hidden inline-flex">
+                        <svg class="animate-spin w-5 h-5 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                    <span id="enrichLabel" class="text-cyan-400 group-hover:text-cyan-300 transition-colors">Enrich with News</span>
+                </button>
+
+                <!-- Enrich with History Button (historical data/patterns) -->
+                <button
+                    id="historyBtn"
+                    onclick="enrichWithHistory()"
+                    class="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 border border-amber-500/30 hover:border-amber-400/60 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 group"
+                >
+                    <span id="historyIcon" class="inline-flex">
+                        <svg class="w-5 h-5 text-amber-400 group-hover:text-amber-300 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                        </svg>
+                    </span>
+                    <span id="historySpinner" class="hidden inline-flex">
+                        <svg class="animate-spin w-5 h-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                    <span id="historyLabel" class="text-amber-400 group-hover:text-amber-300 transition-colors">Enrich with History</span>
+                </button>
+            </div>
 
             <!-- Submit Button -->
             <button 

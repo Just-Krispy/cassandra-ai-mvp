@@ -23,11 +23,11 @@
     return hash.toString();
   }
 
-  function setEnrichButtonState(state) {
-    const btn = document.getElementById('enrichBtn');
-    const spinner = document.getElementById('enrichSpinner');
-    const icon = document.getElementById('enrichIcon');
-    const label = document.getElementById('enrichLabel');
+  function setButtonState(btnId, spinnerId, iconId, labelId, state, readyText) {
+    const btn = document.getElementById(btnId);
+    const spinner = document.getElementById(spinnerId);
+    const icon = document.getElementById(iconId);
+    const label = document.getElementById(labelId);
 
     if (!btn) return;
 
@@ -52,9 +52,17 @@
         btn.classList.remove('opacity-60', 'cursor-not-allowed');
         spinner.classList.add('hidden');
         icon.classList.remove('hidden');
-        label.textContent = 'Enrich with News';
+        label.textContent = readyText;
         break;
     }
+  }
+
+  function setEnrichButtonState(state) {
+    setButtonState('enrichBtn', 'enrichSpinner', 'enrichIcon', 'enrichLabel', state, 'Enrich with News');
+  }
+
+  function setHistoryButtonState(state) {
+    setButtonState('historyBtn', 'historySpinner', 'historyIcon', 'historyLabel', state, 'Enrich with History');
   }
 
   async function enrichScenario() {
@@ -97,11 +105,11 @@
           tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 10 }],
           messages: [{
             role: 'user',
-            content: `You are a neutral intelligence analyst gathering REAL-TIME, CURRENT data to enrich a game theory scenario analysis.
+            content: `You are a neutral intelligence analyst gathering REAL-TIME, BREAKING, CURRENT news to enrich a game theory scenario analysis.
 
 TODAY'S DATE: ${new Date().toISOString().slice(0,10)}
 
-MANDATORY: Use the web_search tool to find the LATEST news and data. Search for developments from the LAST 7 DAYS ONLY. Do NOT rely on your training data — search the web for every data point. If you cannot find a current source, say so rather than guessing.
+MANDATORY: Use the web_search tool to find ONLY the LATEST news and data. Search for developments from the LAST 48 HOURS and up to 7 DAYS MAX. Do NOT include historical context, background, or training data — this is a LIVE NEWS feed ONLY. If you cannot find a current source, say so rather than guessing. Every data point must be from the current week.
 
 CRITICAL RULES:
 1. ONLY state VERIFIED FACTS with specific numbers, dates, and sources
@@ -194,6 +202,132 @@ Search the web for the latest developments and return ONLY verified, sourced fac
     }
   }
 
+  async function enrichWithHistory() {
+    const textarea = document.getElementById('scenario');
+    if (!textarea) return;
+
+    const scenarioText = textarea.value.trim();
+    if (!scenarioText) {
+      alert('Please enter a scenario first.');
+      return;
+    }
+
+    const hash = 'hist_' + hashScenario(scenarioText);
+    if (enrichedScenarios.has(hash)) {
+      alert('This scenario has already been enriched with history. Modify the scenario text to enrich again.');
+      return;
+    }
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      alert('API key not found. Please enter your Anthropic API key first.');
+      return;
+    }
+
+    setHistoryButtonState('loading');
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4096,
+          temperature: 0.3,
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 10 }],
+          messages: [{
+            role: 'user',
+            content: `You are a historian and game theory analyst. Your job is to enrich a scenario with HISTORICAL parallels, precedents, and pattern analysis — NOT current news.
+
+TODAY'S DATE: ${new Date().toISOString().slice(0,10)}
+
+MANDATORY: Use web_search to find historical data, academic sources, and archived analyses. Search for HISTORICAL PRECEDENTS and ANALOGOUS SITUATIONS from the past — wars, treaties, crises, economic events, political decisions that mirror or inform the user's scenario.
+
+CRITICAL RULES:
+1. Focus EXCLUSIVELY on historical data — NO current news or live developments
+2. Find the closest historical analogues to the scenario described
+3. For each historical parallel, provide: what happened, why it's relevant, and what the outcome was
+4. Include specific dates, figures, casualty numbers, economic impacts from historical events
+5. Reference academic papers, historical archives, and expert analyses where possible
+6. Identify patterns: What happened when leaders made similar choices in the past?
+7. Include game theory outcomes from historical crises (who won, who lost, what was the Nash equilibrium)
+
+FORMAT YOUR RESPONSE AS:
+## Historical Parallels
+- List the most relevant historical analogues with dates and outcomes
+
+## Pattern Analysis
+- What patterns emerge from these historical cases?
+- What strategies succeeded vs failed?
+
+## Game Theory Lessons
+- Nash equilibria observed in similar historical situations
+- Commitment problems and how they were (or weren't) solved
+- Credibility of threats/promises based on historical track record
+
+## Key Historical Data Points
+- Specific numbers, dates, treaties, battles, economic data that inform this scenario
+- Source each data point
+
+## Historical Warnings
+- What went wrong in similar situations?
+- What red lines were crossed and what were the consequences?
+- What off-ramps existed but were missed?
+
+SCENARIO TO ANALYZE HISTORICALLY:
+${scenarioText}
+
+Search for historical precedents, academic analyses, and pattern data. Return ONLY historically-sourced intelligence.`
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(function() { return {}; });
+        if (response.status === 401) {
+          throw new Error('Invalid API key. Please check your credentials.');
+        } else if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+        }
+        throw new Error((err.error && err.error.message) || ('API error (' + response.status + ')'));
+      }
+
+      const data = await response.json();
+      let enrichment = '';
+      if (data.content && Array.isArray(data.content)) {
+        for (const block of data.content) {
+          if (block.type === 'text' && block.text) {
+            enrichment += block.text + '\n';
+          }
+        }
+      }
+      enrichment = enrichment.trim();
+
+      if (!enrichment) {
+        throw new Error('No historical data received.');
+      }
+
+      textarea.value = scenarioText + '\n\n--- HISTORICAL INTELLIGENCE (pattern analysis, verified) ---\n' + enrichment;
+
+      if (typeof window.updateCharCount === 'function') {
+        window.updateCharCount();
+      }
+
+      enrichedScenarios.add(hash);
+      setHistoryButtonState('done');
+
+    } catch (error) {
+      console.error('History enrichment error:', error);
+      alert('Enrichment failed: ' + error.message);
+      setHistoryButtonState('ready');
+    }
+  }
+
   function monitorTextChanges() {
     const textarea = document.getElementById('scenario');
     if (!textarea) return;
@@ -204,6 +338,9 @@ Search the web for the latest developments and return ONLY verified, sourced fac
       if (Math.abs(currentLength - lastLength) > 5 || currentLength < lastLength) {
         if (!textarea.value.includes('--- LIVE INTELLIGENCE')) {
           setEnrichButtonState('ready');
+        }
+        if (!textarea.value.includes('--- HISTORICAL INTELLIGENCE')) {
+          setHistoryButtonState('ready');
         }
       }
       lastLength = currentLength;
@@ -217,4 +354,5 @@ Search the web for the latest developments and return ONLY verified, sourced fac
   }
 
   window.enrichScenario = enrichScenario;
+  window.enrichWithHistory = enrichWithHistory;
 })();
