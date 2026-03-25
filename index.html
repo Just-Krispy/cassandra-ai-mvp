@@ -375,6 +375,16 @@
                     <div class="text-green-400 text-sm font-medium">Hiring</div>
                     <div class="text-gray-500 text-xs mt-1">Hire now or wait?</div>
                 </button>
+                <button onclick="loadExample('negotiation')" class="hidden md:block group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-yellow-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M17 18a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2"/><rect x="3" y="4" width="18" height="18" rx="2"/><circle cx="12" cy="10" r="2"/><line x1="8" y1="2" x2="8" y2="4"/><line x1="16" y1="2" x2="16" y2="4"/></svg>
+                    <div class="text-yellow-400 text-sm font-medium">Negotiation</div>
+                    <div class="text-gray-500 text-xs mt-1">Salary, deal, or contract</div>
+                </button>
+                <button onclick="loadExample('acquisition')" class="hidden md:block group p-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl border border-gray-700/50 hover:border-purple-500/40 transition-all text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                    <div class="text-purple-400 text-sm font-medium">Acquisition</div>
+                    <div class="text-gray-500 text-xs mt-1">Buy, merge, or compete?</div>
+                </button>
             </div>
         </div>
 
@@ -894,7 +904,23 @@ PLAYERS: You (solo founder, profitable side project $8K MRR), potential senior h
 SITUATION: Roadmap backlog is 6+ months. Growing 15% MoM. Hire now = accelerate product + scale, but burn increases and runway drops to 10 months. Wait = slower growth but more runway + keep equity.
 CONTEXT: 2 competitors just raised funding. Market window may close in 12 months. You're technical but building alone is slow.
 
-Model 3 paths: (1) hire senior dev now — burn $12K/mo, ship faster, capture market but higher risk if growth slows, (2) hire junior/part-time — cheaper but still requires your time mentoring, (3) wait 6 months — prove $15K MRR first, safer but may miss window. Include talent market competition and product-market fit risk.`
+Model 3 paths: (1) hire senior dev now — burn $12K/mo, ship faster, capture market but higher risk if growth slows, (2) hire junior/part-time — cheaper but still requires your time mentoring, (3) wait 6 months — prove $15K MRR first, safer but may miss window. Include talent market competition and product-market fit risk.`,
+
+            negotiation: `SCENARIO: Salary Negotiation — Senior Role Offer
+
+PLAYERS: You (candidate, 8 years experience, currently employed at $145K), Hiring Company (Series B startup, $30M raised, 80 employees), Your Current Employer (may counter-offer)
+SITUATION: You received an offer for $165K base + 0.15% equity (4-year vest). The role is a step up (team lead). You believe market rate is $175-185K for this role. You have no other active offers but your current job is stable.
+CONTEXT: Tech market is cooling — fewer roles available than 2024. The startup's equity could be worth $200K+ at projected exit, or $0. Your current employer has been hinting at a promotion in 6 months.
+
+Model the negotiation: (1) Accept as-is — secure the role, good equity, (2) Counter at $180K + 0.2% equity — risk them rescinding or going with #2 candidate, (3) Use the offer to negotiate a raise/promotion at current company — keep stability but miss startup upside. Include BATNA analysis and the risk of over-negotiating.`,
+
+            acquisition: `SCENARIO: Acquisition vs Build vs Partner
+
+PLAYERS: Your Company (B2B SaaS, $5M ARR, 40 employees), Target Company (complementary product, $1.2M ARR, 12 employees, asking $8M), Strategic Partner (large enterprise, wants to white-label your product), Competitors (2 well-funded players building similar features)
+SITUATION: Your customers keep asking for a feature set that the target company already built. You could: acquire them, build it yourself (12-18 months), or partner with the enterprise player who wants exclusivity.
+CONTEXT: You have $3M in the bank and could raise a bridge round. The target's tech is solid but their sales are weak. The enterprise partner would guarantee $2M/year but wants 3-year exclusivity. Your competitors are 6 months behind you.
+
+Analyze: (1) Acquire for $8M (raise to fund it) — get the tech + team immediately but integration risk + dilution, (2) Build in-house — slower but full control + no dilution, risk competitors catching up, (3) Enterprise partnership — guaranteed revenue but locked in, lose independence. Include acquisition premium analysis, build-vs-buy NPV, and partnership dependency risks.`
         };
 
         // Make loadExample globally accessible
