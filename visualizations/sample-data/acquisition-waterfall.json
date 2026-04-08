@@ -1,0 +1,6 @@
+{
+  "categories": ["Build", "Buy", "Partner"],
+  "costs": [42000, 69000, 48000],
+  "timeToValue": [12, 7, 6],
+  "net": [35000, 63000, 47000]
+}

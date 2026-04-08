@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nash Visualization Demos 🦞📊</title>
+  <link href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script type="module" src="viz-library.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #0a0a0f;
+      color: #f1f1f9;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 0 0 32px 0;
+    }
+    h1 {
+      text-align: center;
+      margin: 2rem 0 1rem 0;
+      color: #00d4ff;
+      letter-spacing: 1px;
+      font-size: 2.7rem;
+    }
+    .viz-grid {
+      display: grid;
+      grid-gap: 28px;
+      grid-template-columns: repeat(auto-fit, minmax(370px, 1fr));
+      margin: 0 auto;
+      max-width: 1500px;
+      padding: 20px;
+    }
+    .viz-card {
+      background: #15151e;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px #0003, 0 1px 0px #222235;
+      padding: 24px 18px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 315px;
+    }
+    .viz-title {
+      font-weight: 600;
+      color: #ffd700;
+      font-size: 1.16rem;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+      text-align: center;
+    }
+    .viz-canvas, .viz-svg {
+      background: #191927;
+      border-radius: 9px;
+      box-shadow: 0 2px 10px #0001;
+      padding: 12px 0 0 0;
+      margin-bottom: 13px;
+    }
+    /* Tooltip style */
+    .nash-tooltip {
+      pointer-events: none;
+      transition: opacity 0.16s;
+    }
+    @media (max-width: 800px) {
+      .viz-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <h1>Nash Visualization Library Demos 🦞</h1>
+  <div class="viz-grid">
+    <div class="viz-card"><div class="viz-title">Career Matrix</div><canvas class="viz-canvas" id="careerMatrix" width="340" height="305"></canvas></div>
+    <div class="viz-card"><div class="viz-title">Investment Monte Carlo</div><canvas class="viz-canvas" id="investmentMonteCarlo" width="360" height="280"></canvas></div>
+    <div class="viz-card"><div class="viz-title">Launch Timeline</div><canvas class="viz-canvas" id="launchTimeline" width="340" height="220"></canvas></div>
+    <div class="viz-card"><div class="viz-title">Geopolitical Network</div><div class="viz-svg" id="geopoliticalNetwork" style="width:340px;height:285px"></div></div>
+    <div class="viz-card"><div class="viz-title">Relocation Radar</div><canvas class="viz-canvas" id="relocationRadar" width="330" height="270"></canvas></div>
+    <div class="viz-card"><div class="viz-title">Partnership Venn</div><div class="viz-svg" id="partnershipVenn" style="width:338px;height:200px"></div></div>
+    <div class="viz-card"><div class="viz-title">Pricing Optimizer</div><canvas class="viz-canvas" id="pricingOptimizer" width="348" height="260"></canvas></div>
+    <div class="viz-card"><div class="viz-title">Hiring Cost-Benefit</div><canvas class="viz-canvas" id="hiringCostBenefit" width="360" height="230"></canvas></div>
+    <div class="viz-card"><div class="viz-title">Negotiation BATNA</div><div class="viz-svg" id="negotiationBATNA" style="width:350px;height:120px"></div></div>
+    <div class="viz-card"><div class="viz-title">Acquisition Waterfall</div><canvas class="viz-canvas" id="acquisitionWaterfall" width="350" height="200"></canvas></div>
+  </div>
+  <div style="display: flex; justify-content: center; margin-top: 38px;">
+    <div id="confidenceMeterMount" style="height:100px;"></div>
+  </div>
+<script type="module">
+import * as NashViz from './viz-library.js';
+
+// Helper to fetch and parse sample data
+async function getData(name) {
+  let res = await fetch(`sample-data/${name}.json`);
+  return res.json();
+}
+// 1. CAREER MATRIX
+getData('career-matrix').then(data => {
+  const ctx = document.getElementById('careerMatrix').getContext('2d');
+  const scatterData = {
+    datasets: data.options.map(opt => ({
+      label: opt.name,
+      data: [{x: opt.risk, y: opt.reward}],
+      backgroundColor: opt.color,
+      pointRadius: 8,
+      pointHoverRadius: 12,
+    }))
+  };
+  const chart = new Chart(ctx, {
+    type: 'scatter',
+    data: scatterData,
+    options: {
+      responsive: false,
+      plugins: {
+        legend: {display:false},
+        tooltip: {
+          callbacks: { label: ctx => ` ${ctx.dataset.label} — Risk: ${ctx.parsed.x}, Reward: ${ctx.parsed.y}` },
+        },
+        annotation: {
+        }
+      },
+      scales: {
+        x: {
+          min: 0, max: 11, title: { display: true, text: 'Risk' }, grid: {color: '#222235'},
+          ticks: { color: '#ffd700' }
+        },
+        y: {
+          min: 0, max: 11, title: { display: true, text: 'Reward' }, grid: {color:'#222235'},
+          ticks: { color: '#ffd700' }
+        }
+      },
+      plugins: {
+        afterDraw: (chart) => {
+          // Draw quadrant labels
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.font = 'bold 13px Inter';
+          ctx.fillStyle = '#ffd700';
+          ctx.textBaseline = 'middle';
+
+          ctx.fillText('Safe Bet', chart.scales.x.getPixelForValue(2), chart.scales.y.getPixelForValue(9));
+          ctx.fillText('High Risk High Reward', chart.scales.x.getPixelForValue(9), chart.scales.y.getPixelForValue(9));
+          ctx.fillText('Low Priority', chart.scales.x.getPixelForValue(2), chart.scales.y.getPixelForValue(2));
+          ctx.fillText('Growth Play', chart.scales.x.getPixelForValue(9), chart.scales.y.getPixelForValue(2));
+          ctx.restore();
+        }
+      }
+    }
+  });
+});
+
+// 2. INVESTMENT MONTE CARLO
+getData('investment-monte-carlo').then(data => {
+  const ctx = document.getElementById('investmentMonteCarlo').getContext('2d');
+  let datasets = data.simulations.map((sim, i) => ({
+    label: `Simulation ${i+1}`,
+    data: sim.map((val, idx) => ({x:data.timeMonths[idx],y:val})),
+    borderColor: 'rgba(0,212,255,0.35)',
+    backgroundColor: 'rgba(0,212,255,0.12)',
+    borderWidth: 2,
+    pointRadius: 0,
+    fill: false,
+    borderDash: [2,5],
+  }));
+  datasets.push(
+    { label: 'Option A', data: data.optionA.map((y,i)=>({x:data.timeMonths[i],y})), borderColor:'#00d4ff', borderWidth: 3, pointRadius:2, fill: false },
+    { label: 'Option B', data: data.optionB.map((y,i)=>({x:data.timeMonths[i],y})), borderColor:'#ff6b35', borderWidth: 3, pointRadius:2, fill: false },
+    {
+      label: 'Confidence', type: 'line',
+      data: data.confidenceHigh.map((y, i) => ({x:data.timeMonths[i],y})),
+      backgroundColor: 'rgba(0,255,136,0.14)',
+      borderColor: 'rgba(0,255,136,0)',
+      pointRadius: 0,
+      fill: '+1',
+      order: 99,
+      borderWidth: 0.1
+    },
+    {
+      label: '', type: 'line',
+      data: data.confidenceLow.map((y, i) => ({x:data.timeMonths[i],y})),
+      backgroundColor: 'rgba(0,255,136,0.14)',
+      borderColor: 'rgba(0,255,136,0)',
+      pointRadius: 0,
+      fill: false,
+      order: 99,
+      borderWidth: 0.1
+    }
+  );
+  new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {responsive:false,scales:{x:{title:{display:true,text:'Months'},grid:{color:'#222235'},ticks:{color:'#ffd700'}},y:{title:{display:true,text:'Value ($)'},grid:{color:'#222235'},ticks:{color:'#ffd700'}}},plugins:{legend:{labels:{color:'#ffd700'}},tooltip:{},}, elements: { line: { tension: 0.2 } } }
+  });
+});
+
+// 3. LAUNCH TIMELINE
+getData('launch-timeline').then(data => {
+  const ctx = document.getElementById('launchTimeline').getContext('2d');
+  let sweetStart = data.sweetSpot[0], sweetEnd = data.sweetSpot[1];
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.weeks.map(w=>`Week ${w}`),
+      datasets: [{
+        label:'Success Probability',
+        data: data.curve,
+        fill:'start',
+        backgroundColor: ctx=> {
+          const {chart} = ctx;
+          let grad = chart.ctx.createLinearGradient(0,60,0,220);
+          grad.addColorStop(0.05,'#00ff8855');
+          grad.addColorStop(0.5,'#00d4ff33');
+          grad.addColorStop(1,'#0a0a0f00');
+          return grad;
+        },
+        borderColor:'#00d4ff',
+        pointRadius:2,tension:.3
+      }]
+    },
+    options:{responsive:false,scales:{x:{grid:{color:'#333'},ticks:{color:'#ffd700'}},y:{title:{display:true,text:'Success %'},grid:{color:'#222235'},max:100,ticks:{color:'#ffd700'}}},plugins:{legend:{display:false}},animation:{duration:1400},plugins:{annotation:{annotations:{}}},
+      elements:{point:{radius:0}},
+      plugins:{
+        afterDraw: (chart) => {
+          // Sweet spot zone
+          const ctx = chart.ctx;
+          const x0 = chart.scales.x.getPixelForValue(sweetStart-1);
+          const x1 = chart.scales.x.getPixelForValue(sweetEnd-1);
+          ctx.save();
+          ctx.globalAlpha=0.21;
+          ctx.fillStyle='#00ff88';
+          ctx.fillRect(x0,chart.chartArea.top,x1-x0,chart.chartArea.bottom-chart.chartArea.top);
+          ctx.globalAlpha=1;
+          // Competitor launch markers
+          data.competitors.forEach(n=>{
+            let cx=chart.scales.x.getPixelForValue(n-1), y=chart.scales.y.getPixelForValue(data.curve[n-1]);
+            ctx.beginPath();
+            ctx.arc(cx,y,8,0,2*Math.PI);
+            ctx.fillStyle='#ff4757aa';
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+      }
+    }
+  });
+});
+
+// 4. GEOPOLITICAL NETWORK
+getData('geopolitical-network').then(data => {
+  let el = document.getElementById('geopoliticalNetwork');
+  el.innerHTML = '';
+  const width = 340, height = 285;
+  const colorMap = {ally:'#00ff88', rival:'#ff4757', neutral:'#ffd700'};
+  let svg = d3.select(el).append('svg').attr('width',width).attr('height',height);
+  let simulation = d3.forceSimulation(data.nodes)
+    .force('link', d3.forceLink(data.links).id(d=>d.id).distance(84))
+    .force('charge', d3.forceManyBody().strength(-215))
+    .force('center', d3.forceCenter(width/2, height/2));
+
+  let link = svg.selectAll('.link')
+    .data(data.links)
+    .enter().append('line')
+      .attr('class','link')
+      .attr('stroke',d=>colorMap[d.type]||'#fff')
+      .attr('stroke-width',2.6)
+      .attr('opacity',0.6);
+
+  let node = svg.selectAll('.node')
+    .data(data.nodes)
+    .enter().append('circle')
+      .attr('class','node')
+      .attr('r',d=>12+d.influence/18)
+      .attr('fill','#00d4ff')
+      .call(d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended));
+  let label = svg.selectAll('.label')
+    .data(data.nodes)
+    .enter().append('text')
+      .attr('dy','0.35em')
+      .attr('x', 24)
+      .text(d=>d.id)
+      .attr('fill','#ffd700')
+      .style('font-weight','bold');
+
+  simulation.on('tick', () => {
+    link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    node.attr('cx',d=>d.x).attr('cy',d=>d.y);
+    label.attr('x',d=>d.x+16).attr('y',d=>d.y);
+  });
+
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.27).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x; d.fy = event.y;
+  }
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null; d.fy = null;
+  }
+});
+
+// 5. RELOCATION RADAR
+getData('relocation-radar').then(data => {
+  const ctx = document.getElementById('relocationRadar').getContext('2d');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: data.axes,
+      datasets: data.cities.map((c, i) => ({label:c.name,data:c.values,backgroundColor:d3.color(c.color).copy({opacity:.23}),borderColor: c.color, borderWidth:2,pointRadius:3,fill:true}))
+    },
+    options: {
+      plugins: {legend:{labels:{color:'#ffd700'}}}, responsive:false,
+      scales: { r: { angleLines: {color:'#ffd70044'}, grid: {color:'#222235'}, pointLabels: { color: '#ffd700', font:{weight:'bold'} }, min: 0, max: 10, ticks:{color:'#ffd700'} } },
+    }
+  });
+});
+
+// 6. PARTNERSHIP VENN
+getData('partnership-venn').then(data => {
+  let el = document.getElementById('partnershipVenn');
+  el.innerHTML = '';
+  const width = 338, height = 200;
+  let svg = d3.select(el).append('svg').attr('width',width).attr('height',height);
+  let c1 = {x: 120, y: 100, r: 75}, c2 = {x: 220, y: 100, r: 75};
+  svg.append('circle').attr('cx',c1.x).attr('cy',c1.y).attr('r',c1.r).attr('fill','#00d4ff55').attr('stroke','#00d4ff').attr('stroke-width',3);
+  svg.append('circle').attr('cx',c2.x).attr('cy',c2.y).attr('r',c2.r).attr('fill','#ff6b3599').attr('stroke','#ff6b35').attr('stroke-width',3);
+  svg.append('text').attr('x',c1.x-55).attr('y',c1.y-32).attr('fill','#00d4ff').attr('font-size','1.1em').text(data.left.join(', '));
+  svg.append('text').attr('x',c2.x+12).attr('y',c2.y-32).attr('fill','#ff6b35').attr('font-size','1.1em').text(data.right.join(', '));
+  svg.append('text').attr('x',170).attr('y',98).attr('fill','#ffd700').attr('font-size','1.1em').text(data.shared.join(', '));
+  svg.append('text').attr('x',170).attr('y',124).attr('font-size','2.2em').attr('text-anchor','middle').attr('fill','#00ff88').attr('opacity',0).transition().duration(950).attr('opacity',1).text('Synergy: '+data.synergyScore+'%');
+});
+
+// 7. PRICING OPTIMIZER
+getData('pricing-optimizer').then(data => {
+  const ctx = document.getElementById('pricingOptimizer').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.prices.map(p=>`$${p}`),
+      datasets: [
+        {
+          type:'line', label:'Demand', data:data.demand, borderColor:'#00d4ff', borderWidth:2, pointRadius:3, yAxisID:'demand', backgroundColor:'rgba(0,212,255,0.06)', fill:true },
+        {
+          label: 'Revenue', data: data.revenue, backgroundColor:'#ff6b35bb', borderRadius:5, yAxisID: 'revenue' },
+      ]
+    },
+    options: {
+      responsive:false,
+      plugins:{legend:{labels:{color:'#ffd700'}},tooltip:{}},
+      scales:{ demand:{position:'left',max:1200,ticks:{color:'#ffd700'}}, revenue:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#ff6b35'} } },
+      plugins:{afterDraw:(chart)=>{
+        let ctx=chart.ctx,x=chart.scales.x.getPixelForValue(data.prices.indexOf(data.sweetSpot)),top=chart.scales.demand.top,bottom=chart.scales.demand.bottom;
+        ctx.save(); ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.strokeStyle='#00ff88'; ctx.lineWidth=4; ctx.setLineDash([7,7]); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+        // Competitor dots
+        data.competitors.forEach(price=>{
+          let idx=data.prices.indexOf(price);if(idx>=0){let cx=chart.scales.x.getPixelForValue(idx),cy=chart.scales.demand.getPixelForValue(data.demand[idx]);ctx.beginPath();ctx.arc(cx,cy,8,0,2*Math.PI);ctx.fillStyle='#ffd700';ctx.fill();}}
+      }}
+    }
+  });
+});
+
+// 8. HIRING COST BENEFIT
+getData('hiring-cost-benefit').then(data => {
+  const ctx = document.getElementById('hiringCostBenefit').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.months.map(m=>`Month ${m}`),
+      datasets: [
+        {label:'With Hire',data:data.withHire,borderColor:'#00d4ff',borderWidth:3,fill:false},
+        {label:'Without Hire',data:data.withoutHire,borderColor:'#ff6b35',borderWidth:3,fill:false},
+      ]
+    },
+    options:{responsive:false,plugins:{legend:{labels:{color:'#ffd700'}},tooltip:{}},scales:{y:{title:{display:true,text:'Net Benefit'},grid:{color:'#222235'},ticks:{color:'#ffd700'}},x:{ticks:{color:'#ffd700'}}},elements:{point:{radius:2}},plugins:{afterDraw:(chart)=>{
+      let ctx=chart.ctx,x=chart.scales.x.getPixelForValue(data.breakEven-1),top=chart.scales.y.top,bottom=chart.scales.y.bottom;
+      ctx.save();ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.strokeStyle='#00ff88';ctx.lineWidth=4;ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);
+      // ROI area
+      let start=data.roiAreaStart-1,wX=chart.scales.x.getPixelForValue(start), width=chart.scales.x.right-wX;
+      ctx.globalAlpha=0.13;ctx.fillStyle='#00ff88';ctx.fillRect(wX,top,width,bottom-top);ctx.globalAlpha=1;
+      // Cost annotations
+      data.monthlyCosts.forEach((cost,i)=>{let cx=chart.scales.x.getPixelForValue(i),cy=chart.scales.y.getPixelForValue(data.withHire[i]);ctx.save();ctx.font='bold 11px Inter';ctx.fillStyle='#ffd700';ctx.fillText('$'+cost,cx-10,cy-10);ctx.restore();})
+      ctx.restore();}}}}
+  });
+});
+
+// 9. NEGOTIATION BATNA
+getData('negotiation-batna').then(data => {
+  let el = document.getElementById('negotiationBATNA');
+  el.innerHTML='';
+  const width=350, height=120;
+  let svg=d3.select(el).append('svg').attr('width',width).attr('height',height);
+  // Your range bar
+  svg.append('rect').attr('x',data.yourRange[0]).attr('y',43).attr('width',data.yourRange[1]-data.yourRange[0]).attr('height',19).attr('fill','#00d4ff77');
+  // Their range bar
+  svg.append('rect').attr('x',data.theirRange[0]).attr('y',63).attr('width',data.theirRange[1]-data.theirRange[0]).attr('height',19).attr('fill','#ff475799');
+  // ZOPA (overlap)
+  svg.append('rect').attr('x',data.zopa[0]).attr('y',53).attr('width',data.zopa[1]-data.zopa[0]).attr('height',19).attr('fill','#00ff8889');
+  // BATNA lines
+  svg.append('line').attr('x1',data.yourBATNA).attr('y1',36).attr('x2',data.yourBATNA).attr('y2',105).attr('stroke','#00d4ff').attr('stroke-width',3).attr('stroke-dasharray','3 3');
+  svg.append('line').attr('x1',data.theirBATNA).attr('y1',36).attr('x2',data.theirBATNA).attr('y2',105).attr('stroke','#ff4757').attr('stroke-width',3).attr('stroke-dasharray','3 3');
+  // Nash Equilibrium point
+  svg.append('circle').attr('cx',data.nashEquilibrium).attr('cy',62).attr('r',10).attr('fill','#ffd700').attr('stroke','#222235').attr('stroke-width',3);
+  svg.append('text').attr('x',data.nashEquilibrium).attr('y',94).attr('fill','#ffd700').attr('text-anchor','middle').attr('font-size','1.01em').text('Nash EQ');
+});
+// 10. ACQUISITION WATERFALL
+getData('acquisition-waterfall').then(data => {
+  const ctx = document.getElementById('acquisitionWaterfall').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.categories,
+      datasets: [
+        {
+          label:'Build/Buy/Partner Cost', data: data.costs, backgroundColor:['#00d4ff','#ff6b35','#00ff88'], borderRadius:6, borderWidth:2,
+        },
+        {
+          label:'Time-to-Value (mo)', type:'line', data:data.timeToValue, borderColor:'#ffd700', borderWidth: 3, pointRadius:5, fill:false, yAxisID:'time',
+        },
+        {
+          label:'Net Comparison',type:'bar',data:data.net,backgroundColor:['#222235','#ff6b3533','#00ff8833'],borderRadius:3,borderWidth:1}
+      ]
+    },
+    options: {responsive:false,plugins:{legend:{labels:{color:'#ffd700'}},tooltip:{}},scales:{y:{title:{display:true,text:'Cost'},grid:{color:'#222235'},ticks:{color:'#ffd700'}},time:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#ffd700'}}},elements:{point:{radius:2}}}
+  });
+});
+
+// CONFIDENCE METER
+NashViz.renderConfidenceMeter(document.getElementById('confidenceMeterMount'), 87, 'Overall Confidence');
+</script>
+</body>
+</html>
